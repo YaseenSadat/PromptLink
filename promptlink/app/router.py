@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
+from app.utils import route_prompt
 
 router = APIRouter()
 
@@ -8,4 +9,8 @@ class PromptInput(BaseModel):
 
 @router.post("/prompt")
 async def handle_prompt(data: PromptInput):
-    return {"message": f"Received prompt: {data.prompt}"}
+    intent, response = route_prompt(data.prompt)
+    return {
+        "intent": intent,
+        "response": response
+    }
