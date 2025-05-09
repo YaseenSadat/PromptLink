@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
 import re
+from datetime import datetime
 import numpy as np
 from langchain_openai import OpenAIEmbeddings
 
@@ -40,23 +41,37 @@ def route_prompt(prompt: str):
     template = prompt_templates[intent]
     chain = template | llm
     response = chain.invoke({"input": prompt})
+
+    # Run scoring (which now includes CoT validation)
     score = score_response(prompt, response.content)
 
-    # Log interaction
-    log_to_neo4j(prompt, intent, response.content, score)
+    # OPTIONAL: pull CoT score separately if you want to log/see it clearly
+    cot_score = validate_chain_of_thought(response.content)
+
+    # Log to Neo4j with CoT as a property
+    log_to_neo4j(prompt, intent, response.content, score, cot_score)
+
+    # Print for debugging
+    print(f"[DEBUG] CoT Score: {cot_score * 2}/20")
 
     return intent, response.content, score
 
 
+
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
-def log_to_neo4j(prompt: str, intent: str, response: str, score: float):
+def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float):
     with driver.session() as session:
         session.run(
             """
             MERGE (p:Prompt {text: $prompt})
             MERGE (i:Intent {type: $intent})
-            CREATE (r:Response {text: $response, score: $score})
+            CREATE (r:Response {
+                text: $response,
+                score: $score,
+                cot_score: $cot_score,
+                timestamp: datetime($timestamp)
+            })
             MERGE (p)-[:HAS_INTENT]->(i)
             MERGE (p)-[:GOT_RESPONSE]->(r)
             MERGE (i)-[:TRIGGERED]->(r)
@@ -64,25 +79,47 @@ def log_to_neo4j(prompt: str, intent: str, response: str, score: float):
             prompt=prompt,
             intent=intent,
             response=response,
-            score=score
+            score=score,
+            cot_score=cot_score,
+            timestamp=datetime.utcnow().isoformat()
         )
+
+def score_length(prompt: str, response: str) -> int:
+    word_count = len(response.split())
+    concise_keywords = ["brief", "summarize", "summary", "short", "quick", "quickly", "tldr", "less"]
+
+    wants_concise = any(kw in prompt.lower() for kw in concise_keywords)
+
+    if wants_concise:
+        if word_count < 40:
+            return 20
+        elif word_count < 60:
+            return 15
+        elif word_count < 80:
+            return 10
+        elif word_count < 100:
+            return 5
+        else:
+            return 0
+    else:
+        if word_count > 150:
+            return 20
+        elif word_count > 100:
+            return 15
+        elif word_count > 50:
+            return 10
+        elif word_count > 25:
+            return 5
+        else:
+            return 0
+
 
 
 def score_response(prompt: str, response: str) -> int:
     score = 0
 
     # --- 1. Length Score (0–20) ---
-    word_count = len(response.split())
-    if word_count > 150:
-        score += 20
-    elif word_count > 100:
-        score += 15
-    elif word_count > 50:
-        score += 10
-    elif word_count > 25:
-        score += 5
-    else:
-        score += 0
+    score += score_length(prompt, response)
 
     # --- 2. Keyword Overlap Score (0–20) ---
     prompt_words = set(re.findall(r'\w+', prompt.lower()))
@@ -98,7 +135,7 @@ def score_response(prompt: str, response: str) -> int:
     elif overlap_ratio > 0.1:
         score += 5
 
-    # --- 3. Semantic Relevance via Embedding Cosine Similarity (0–20) ---
+    # --- 3. Semantic Similarity Score (0–20) ---
     try:
         vec_prompt = embedding_model.embed_query(prompt)
         vec_response = embedding_model.embed_query(response)
@@ -112,7 +149,7 @@ def score_response(prompt: str, response: str) -> int:
         elif cosine_sim > 0.8:
             score += 5
     except Exception:
-        pass  # fail gracefully if embeddings are not available
+        pass
 
     # --- 4. Clarity Score (0–20) ---
     avg_sentence_length = sum(len(s.split()) for s in re.split(r'[.!?]', response) if s.strip()) / max(1, len(re.findall(r'[.!?]', response)))
@@ -125,13 +162,32 @@ def score_response(prompt: str, response: str) -> int:
     elif avg_sentence_length < 35:
         score += 5
 
-    # --- 5. Completeness Heuristic (0–20) ---
-    if response.strip().endswith((".", "!", "?")):
-        score += 20
-    elif response.strip().endswith("..."):
-        score += 10
-    else:
-        score += 5
+    # --- 5. Chain-of-Thought Score (0–20) ---
+    cot_raw = validate_chain_of_thought(response)  # 0 to 10
+    score += cot_raw * 2
 
-    # --- Final rounding ---
+    # --- Final Rounding ---
     return int(round(score / 10.0) * 10)
+
+def validate_chain_of_thought(response: str) -> float:
+    eval_prompt = f"""You are a reasoning evaluator. Analyze the following answer and rate how logically sound, step-by-step, and coherent the reasoning is.
+
+Answer:
+{response}
+
+Respond with a number from 0 to 10 only, no explanation."""
+
+    print("[DEBUG] Sending CoT validation prompt to LLM:")
+    print(eval_prompt)
+
+    try:
+        evaluation = llm.invoke([HumanMessage(content=eval_prompt)])
+        print("[DEBUG] Raw LLM CoT score response:", evaluation.content)
+
+        raw_score = int("".join(filter(str.isdigit, evaluation.content)))
+        final_score = min(max(raw_score, 0), 10)
+        print(f"[DEBUG] Parsed CoT Score: {final_score}")
+        return final_score
+    except Exception as e:
+        print("[ERROR] Failed to extract CoT score:", str(e))
+        return 0
