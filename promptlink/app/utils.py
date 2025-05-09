@@ -21,19 +21,72 @@ embedding_model = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
 
 # Define multiple prompt templates
 prompt_templates = {
-    "code": ChatPromptTemplate.from_template("You are a Python coding assistant. Answer this: {input}"),
-    "explain": ChatPromptTemplate.from_template("Explain this concept in simple terms: {input}"),
-    "default": ChatPromptTemplate.from_template("Respond to this input: {input}")
+    "code": ChatPromptTemplate.from_template(
+        "You are an expert software engineer. Write clean, efficient, and well-commented code to solve the following problem:\n\n{input}"
+    ),
+
+    "explain": ChatPromptTemplate.from_template(
+        "You are a skilled technical educator. Break down the following concept clearly and simply for a beginner audience:\n\n{input}"
+    ),
+
+    "summarize": ChatPromptTemplate.from_template(
+        "You are a professional summarizer. Create a concise and accurate summary of the following content in bullet points or a paragraph:\n\n{input}"
+    ),
+
+    "generate": ChatPromptTemplate.from_template(
+        "You are a creative content generator. Use an engaging and original tone to generate content based on this prompt:\n\n{input}"
+    ),
+
+    "reason": ChatPromptTemplate.from_template(
+        "You are a logical AI designed for step-by-step reasoning. Solve or evaluate the following situation by explaining each step clearly:\n\n{input}"
+    ),
+
+    "analyze": ChatPromptTemplate.from_template(
+        "You are a critical analyst. Provide a detailed analysis of the following topic, identifying causes, effects, and implications:\n\n{input}"
+    ),
+
+    "advise": ChatPromptTemplate.from_template(
+        "You are a helpful and thoughtful advisor. Offer practical, clear, and empathetic advice for the following question or situation:\n\n{input}"
+    ),
+
+    "edit": ChatPromptTemplate.from_template(
+        "You are a professional editor. Improve the grammar, clarity, and tone of the following text without changing its meaning:\n\n{input}"
+    ),
+
+    "translate": ChatPromptTemplate.from_template(
+        "You are a fluent translator. Translate the following text to fluent English while keeping original tone and context:\n\n{input}"
+    ),
+
+    "default": ChatPromptTemplate.from_template(
+        "You are a helpful assistant. Respond helpfully and concisely to the following input:\n\n{input}"
+    )
 }
 
-# Rudimentary intent detection
+
 def detect_intent(prompt: str) -> str:
-    if any(word in prompt.lower() for word in ["code", "implement", "function", "class", "bug"]):
-        return "code"
-    elif any(word in prompt.lower() for word in ["explain", "what is", "why", "how does"]):
-        return "explain"
-    else:
-        return "default"
+    system_msg = (
+        "You are a helpful AI assistant. Categorize the user's prompt into one of the following intents:\n"
+        "Summarize, Code, Explain, Generate, Reason, Analyze, Advise, Edit, Translate.\n\n"
+        "Return only the one-word intent. Do not explain anything."
+    )
+
+    intent_eval = llm.invoke([
+        HumanMessage(content=system_msg),
+        HumanMessage(content=prompt)
+    ])
+
+    intent = intent_eval.content.strip().lower()
+
+    print(f"[DEBUG] GPT-3.5 predicted intent: {intent}")
+
+    # Normalize it to match lowercase keys
+    valid_intents = {
+        "summarize", "code", "explain", "generate",
+        "reason", "analyze", "advise", "edit", "translate"
+    }
+
+    return intent if intent in valid_intents else "default"
+
 
 # Main LangChain call
 def route_prompt(prompt: str):
