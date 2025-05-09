@@ -1,6 +1,8 @@
 from langchain_openai import ChatOpenAI
 from langchain.prompts import ChatPromptTemplate
 from langchain.schema import HumanMessage
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import Runnable
 import os
 from dotenv import load_dotenv
 from neo4j import GraphDatabase
@@ -63,28 +65,22 @@ prompt_templates = {
 }
 
 
+intent_prompt = ChatPromptTemplate.from_template(
+    "You are a helpful AI assistant. Categorize the user's prompt into one of the following intents:\n"
+    "Summarize, Code, Explain, Generate, Reason, Analyze, Advise, Edit, Translate.\n\n"
+    "Return only the one-word intent. Do not explain anything.\n\n"
+    "Prompt:\n{input}"
+)
+
+intent_chain: Runnable = intent_prompt | llm | StrOutputParser()
+
 def detect_intent(prompt: str) -> str:
-    system_msg = (
-        "You are a helpful AI assistant. Categorize the user's prompt into one of the following intents:\n"
-        "Summarize, Code, Explain, Generate, Reason, Analyze, Advise, Edit, Translate.\n\n"
-        "Return only the one-word intent. Do not explain anything."
-    )
-
-    intent_eval = llm.invoke([
-        HumanMessage(content=system_msg),
-        HumanMessage(content=prompt)
-    ])
-
-    intent = intent_eval.content.strip().lower()
-
-    print(f"[DEBUG] GPT-3.5 predicted intent: {intent}")
-
-    # Normalize it to match lowercase keys
+    intent = intent_chain.invoke({"input": prompt}).strip().lower()
+    print(f"[DEBUG] LangChain predicted intent: {intent}")
     valid_intents = {
         "summarize", "code", "explain", "generate",
         "reason", "analyze", "advise", "edit", "translate"
     }
-
     return intent if intent in valid_intents else "default"
 
 
