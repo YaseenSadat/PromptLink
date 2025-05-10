@@ -18,7 +18,8 @@ NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
 NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
-llm = ChatOpenAI(model="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_API_KEY"))
+llm_3 = ChatOpenAI(model="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_API_KEY"))
+llm_4o = ChatOpenAI(model="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
 embedding_model = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
 
 # Define multiple prompt templates
@@ -59,6 +60,26 @@ prompt_templates = {
         "You are a fluent translator. Translate the following text to fluent English while keeping original tone and context:\n\n{input}"
     ),
 
+     "compare": ChatPromptTemplate.from_template(
+        "You are a helpful assistant. Provide a clear side-by-side comparison of the following options:\n\n{input}"
+    ),
+
+    "review": ChatPromptTemplate.from_template(
+        "You are a critical reviewer. Offer a balanced and insightful critique of the following:\n\n{input}"
+    ),
+
+    "rephrase": ChatPromptTemplate.from_template(
+        "You are a skilled rewriter. Paraphrase the following content in a new tone or style while preserving the original meaning:\n\n{input}"
+    ),
+
+    "expand": ChatPromptTemplate.from_template(
+        "You are a thoughtful writer. Expand on the following idea with additional details, examples, or explanations:\n\n{input}"
+    ),
+
+    "outline": ChatPromptTemplate.from_template(
+        "You are a structured thinker. Convert the following ideas into a clear, organized outline:\n\n{input}"
+    ),
+
     "default": ChatPromptTemplate.from_template(
         "You are a helpful assistant. Respond helpfully and concisely to the following input:\n\n{input}"
     )
@@ -67,20 +88,21 @@ prompt_templates = {
 
 intent_prompt = ChatPromptTemplate.from_template(
     "You are a helpful AI assistant. Categorize the user's prompt into one of the following intents:\n"
-    "Summarize, Code, Explain, Generate, Reason, Analyze, Advise, Edit, Translate.\n\n"
+    "Summarize, Code, Explain, Generate, Reason, Analyze, Advise, Edit, Translate, Compare, Review, Rephrase, Expand, Outline .\n\n"
     "Return only the one-word intent. Do not explain anything.\n\n"
     "Prompt:\n{input}"
 )
 
-intent_chain: Runnable = intent_prompt | llm | StrOutputParser()
+intent_chain: Runnable = intent_prompt | llm_3 | StrOutputParser()
 
 def detect_intent(prompt: str) -> str:
     intent = intent_chain.invoke({"input": prompt}).strip().lower()
     print(f"[DEBUG] LangChain predicted intent: {intent}")
     valid_intents = {
-        "summarize", "code", "explain", "generate",
-        "reason", "analyze", "advise", "edit", "translate"
-    }
+    "summarize", "code", "explain", "generate", "reason",
+    "analyze", "advise", "edit", "translate",
+    "compare", "review", "rephrase", "expand", "outline"}
+
     return intent if intent in valid_intents else "default"
 
 
@@ -88,22 +110,34 @@ def detect_intent(prompt: str) -> str:
 def route_prompt(prompt: str):
     intent = detect_intent(prompt)
     template = prompt_templates[intent]
-    chain = template | llm
+
+    # Choose model based on intent
+    if intent in {"code", "explain", "reason"}:
+        llm_model = llm_4o
+        model_used = "gpt-4o"
+    else:
+        llm_model = llm_3
+        model_used = "gpt-3.5-turbo"
+
+    print(f"[DEBUG] Intent: {intent} | Using model: {model_used}")
+
+    chain = template | llm_model
     response = chain.invoke({"input": prompt})
 
-    # Run scoring (which now includes CoT validation)
-    score = score_response(prompt, response.content)
+    # Run scoring
+    score = score_response(prompt, response.content, intent)
 
-    # OPTIONAL: pull CoT score separately if you want to log/see it clearly
+    # Chain-of-thought score
     cot_score = validate_chain_of_thought(response.content)
 
-    # Log to Neo4j with CoT as a property
+    # Log result
     log_to_neo4j(prompt, intent, response.content, score, cot_score)
 
-    # Print for debugging
     print(f"[DEBUG] CoT Score: {cot_score * 2}/20")
 
     return intent, response.content, score
+
+
 
 
 
@@ -133,13 +167,10 @@ def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_scor
             timestamp=datetime.utcnow().isoformat()
         )
 
-def score_length(prompt: str, response: str) -> int:
+def score_length(prompt: str, response: str, intent: str) -> int:
     word_count = len(response.split())
-    concise_keywords = ["brief", "summarize", "summary", "short", "quick", "quickly", "tldr", "less"]
 
-    wants_concise = any(kw in prompt.lower() for kw in concise_keywords)
-
-    if wants_concise:
+    if intent == "summarize":
         if word_count < 40:
             return 20
         elif word_count < 60:
@@ -164,11 +195,11 @@ def score_length(prompt: str, response: str) -> int:
 
 
 
-def score_response(prompt: str, response: str) -> int:
+def score_response(prompt: str, response: str, intent: str) -> int:
     score = 0
 
     # --- 1. Length Score (0–20) ---
-    score += score_length(prompt, response)
+    score += score_length(prompt, response, intent)
 
     # --- 2. Keyword Overlap Score (0–20) ---
     prompt_words = set(re.findall(r'\w+', prompt.lower()))
@@ -215,6 +246,10 @@ def score_response(prompt: str, response: str) -> int:
     cot_raw = validate_chain_of_thought(response)  # 0 to 10
     score += cot_raw * 2
 
+    # --- Intent override for translate ---
+    if intent == "translate":
+        return 100
+    
     # --- Final Rounding ---
     return int(round(score / 10.0) * 10)
 
@@ -230,7 +265,7 @@ Respond with a number from 0 to 10 only, no explanation."""
     print(eval_prompt)
 
     try:
-        evaluation = llm.invoke([HumanMessage(content=eval_prompt)])
+        evaluation = llm_3.invoke([HumanMessage(content=eval_prompt)])
         print("[DEBUG] Raw LLM CoT score response:", evaluation.content)
 
         raw_score = int("".join(filter(str.isdigit, evaluation.content)))
