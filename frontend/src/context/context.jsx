@@ -16,7 +16,6 @@
 */
 
 import React, { createContext, useState } from "react";
-import runChat from "../config/openai"; // Import OpenAI API integration
 
 // Create and export the Context to make it accessible across components
 export const Context = createContext();
@@ -70,50 +69,54 @@ const ContextProvider = ({ children }) => {
         setShowResult(false);
     };
 
-    /**
-     * Handles sending the user's prompt to the OpenAI API.
-     * It updates states for loading, result display, and manages the response formatting.
-     * 
-     * @param {string} prompt - The user's input prompt (optional).
-     */
     const onSent = async (prompt) => {
-        setResultData("");       // Clear previous result data
-        setLoading(true);        // Indicate loading state
-        setShowResult(true);     // Show the result container
-
-        let response;
-
-        // Check if a prompt is passed or use the current input state
-        if (prompt) {
-            response = await runChat(prompt);
-            setRecentPrompt(prompt);
-        } else {
-            setPrevPrompts((prev) => [...prev, input]); // Add the input to previous prompts
-            setRecentPrompt(input);
-            response = await runChat(input);
+        setResultData("");
+        setLoading(true);
+        setShowResult(true);
+    
+        let userPrompt = prompt || input;
+        if (!prompt) {
+            setPrevPrompts((prev) => [...prev, userPrompt]);
         }
-
-        // Formatting the response: Adding bold and line breaks for better display
-        const responseArray = response.split("**");
-        let formattedResponse = "";
-
-        for (let i = 0; i < responseArray.length; i++) {
-            if (i % 2 === 1) {
-                formattedResponse += `<b>${responseArray[i]}</b>`; // Bold words between **
-            } else {
-                formattedResponse += responseArray[i];
+        setRecentPrompt(userPrompt);
+    
+        try {
+            const response = await fetch("http://localhost:8000/prompt", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ prompt: userPrompt }),
+            });
+    
+            const data = await response.json();
+            const aiResponse = data.response;
+    
+            // Apply same formatting logic you already had
+            const responseArray = aiResponse.split("**");
+            let formattedResponse = "";
+            for (let i = 0; i < responseArray.length; i++) {
+                if (i % 2 === 1) {
+                    formattedResponse += `<b>${responseArray[i]}</b>`;
+                } else {
+                    formattedResponse += responseArray[i];
+                }
             }
+    
+            const newResponseArray = formattedResponse.split("*").join("</br>").split(" ");
+            for (let i = 0; i < newResponseArray.length; i++) {
+                delayPara(i, newResponseArray[i] + " ");
+            }
+    
+        } catch (error) {
+            console.error("Failed to fetch:", error);
+            setResultData("❌ Failed to connect to the backend.");
         }
-
-        // Split the response into words and animate their appearance
-        const newResponseArray = formattedResponse.split("*").join("</br>").split(" ");
-        for (let i = 0; i < newResponseArray.length; i++) {
-            delayPara(i, newResponseArray[i] + " ");
-        }
-
-        setLoading(false); // End the loading state
-        setInput("");      // Clear the input field
+    
+        setLoading(false);
+        setInput("");
     };
+    
 
     /**
      * The value provided to the context consumers.
