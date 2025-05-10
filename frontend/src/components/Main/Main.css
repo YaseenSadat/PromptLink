@@ -5,6 +5,7 @@
 */
 .main{
     flex: 1;
+    background-color: #0c1c23;
     min-height: 100vh;
     padding-bottom: 15vh;
     position: relative;
@@ -14,9 +15,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    font-size: 22px;
+    font-size: 23px;
     padding: 20px;
     color: #22577A;
+    font-weight: bold;
 }
 .main .nav img{
     width: 40px;
@@ -49,10 +51,11 @@
     padding: 20px;
 }
 
+/* #C7F9CC is the old theme colour */
 .main .card{
     height: 200px;
     padding: 15px;
-    background-color: #C7F9CC;
+    background-color: #3b7779;
     border-radius: 10px;
     position: relative;
     cursor: pointer;
@@ -69,7 +72,7 @@
 }
 
 .main .card p{
-    color: #22577A;
+    color: white;
     font-size: 17px;
 }
 
@@ -79,6 +82,8 @@
 
 .main-bottom{
     position: absolute;
+    background-color: #0c1c23;
+    color:white;
     bottom: 0;
     width: 100%;
     max-width: 900px;
@@ -91,7 +96,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 20px;
-    background-color: #C7F9CC;
+    background-color: #3b7779;
     padding: 10px 20px;
     border-radius: 50px;
 }
@@ -135,6 +140,7 @@
 }
 
 .result-title{
+    color:white;
     margin: 40px 0px;
     display: flex;
     align-items: center;
@@ -147,6 +153,7 @@
 }
 
 .result-data{
+    color:white;
     display: flex;
     align-items: start;
     gap: 20px;
@@ -198,3 +205,7 @@
         pad: 5pxx;
     }
 }
+
+::placeholder { /* Most modern browsers support this now. */
+    color:    white;
+ }

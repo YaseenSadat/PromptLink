@@ -17,8 +17,8 @@ const Main = () => {
         <div className="main">
             {/* Navigation bar with application name and user icon */}
             <div className="nav">
-                <p>GenieAI</p>
-                <img src={assets.user_icon} alt="User Icon" />
+                <p>PromptLink</p>
+                <img src={assets.logo} alt="User Icon" />
             </div>
             <div className="main-container">
                 {!showResult ? (
@@ -58,7 +58,7 @@ const Main = () => {
                             <p>{recentPrompt}</p>
                         </div>
                         <div className="result-data">
-                            <img src={assets.gemini_icon} alt="Gemini Icon" />
+                            <img src={assets.logo} alt="Gemini Icon" />
                             {loading ? (
                                 // Loader animation while results are being fetched
                                 <div className="loader">
@@ -76,8 +76,9 @@ const Main = () => {
                 {/* Search box for entering custom prompts */}
                 <div className="main-bottom">
                     <div className="search-box">
-                        <input
+                        <input 
                             onChange={(e) => setInput(e.target.value)}
+                            color='white'
                             value={input}
                             type="text"
                             placeholder="Enter a prompt here"
@@ -91,7 +92,7 @@ const Main = () => {
                         </div>
                     </div>
                     <p className="bottom-info">
-                        GeniAI may display inaccurate info, including about people, so double-check its responses.
+                        PromptLink may display inaccurate info, including about people, so double-check its responses.
                     </p>
                 </div>
             </div>
