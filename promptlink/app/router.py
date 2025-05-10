@@ -9,8 +9,9 @@ class PromptInput(BaseModel):
 
 @router.post("/prompt")
 async def handle_prompt(data: PromptInput):
-    intent, response = route_prompt(data.prompt)
+    intent, response, score = await route_prompt(data.prompt)
     return {
         "intent": intent,
-        "response": response
+        "response": response,
+        "score": score
     }
