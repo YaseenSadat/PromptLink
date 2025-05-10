@@ -250,7 +250,7 @@ def override_with_4o(prompt: str, intent: str):
         )
     else:
         custom_instruction = (
-            "Ensure your response is over 150 words, includes many keywords from the input, "
+            "Ensure your response is more than 150 words, includes many keywords from the input, "
             "is written with high clarity using short, readable sentences, uses step-by-step reasoning "
             "when appropriate, and closely matches the intended meaning to maximize semantic similarity.\n\n"
         )
@@ -266,6 +266,7 @@ def override_with_4o(prompt: str, intent: str):
 
 # ======================== Neo4j Logging ========================
 
+print("URL is: " +NEO4J_URI)
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
 def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float, model: str):
