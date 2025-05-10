@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "firebase": "^11.7.1",
     "neo4j": "^2.0.0-RC2"
   }
 }
