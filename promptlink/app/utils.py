@@ -125,12 +125,13 @@ def route_prompt(prompt: str):
     if intent in {"analyze", "compare", "review", "expand"}:
         llm_model = llm_gemini
         model_used = "gemini-2.0-flash"
-    elif intent in {"code", "explain", "reason"}:
-        llm_model = llm_4o
-        model_used = "gpt-4o"
-    else:
+    elif intent in {"summarize", "generate", "advise", "edit", "translate", "rephrase", "outline", "explain", "reason"}:
         llm_model = llm_3
         model_used = "gpt-3.5-turbo"
+    else:
+        llm_model = llm_4o
+        model_used = "gpt-4o"
+
 
 
     print(f"[DEBUG] Intent: {intent} | Using model: {model_used}")
@@ -181,7 +182,7 @@ def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_scor
             timestamp=datetime.utcnow().isoformat()
         )
 
-def score_length(prompt: str, response: str, intent: str) -> int:
+def score_length(response: str, intent: str) -> int:
     word_count = len(response.split())
 
     if intent == "summarize":
@@ -213,7 +214,7 @@ def score_response(prompt: str, response: str, intent: str) -> int:
     score = 0
 
     # --- 1. Length Score (0–20) ---
-    score += score_length(prompt, response, intent)
+    score += score_length(response, intent)
 
     # --- 2. Keyword Overlap Score (0–20) ---
     prompt_words = set(re.findall(r'\w+', prompt.lower()))
@@ -289,3 +290,30 @@ Respond with a number from 0 to 10 only, no explanation."""
     except Exception as e:
         print("[ERROR] Failed to extract CoT score:", str(e))
         return 0
+    
+    
+def override_with_4o(prompt: str, intent: str):
+    if intent == "summarize":
+        custom_instruction = (
+            "Ensure your summary is under 40 words, includes key terms from the input, "
+            "is written with high clarity using simple sentences, and closely reflects "
+            "the original meaning to maximize semantic similarity.\n\n"
+        )
+    else:
+        custom_instruction = (
+            "Ensure your response is over 150 words, includes many keywords from the input, "
+            "is written with high clarity using short, readable sentences, uses step-by-step reasoning "
+            "when appropriate, and closely matches the intended meaning to maximize semantic similarity.\n\n"
+        )
+
+    modified_prompt = custom_instruction + prompt
+
+    print(f"[DEBUG] Forcing GPT-4o rerun with semantic similarity optimization (intent={intent})")
+
+    try:
+        chain = prompt_templates.get(intent, prompt_templates["default"]) | llm_4o
+        response = chain.invoke({"input": modified_prompt})
+        return response.content
+    except Exception as e:
+        print("[ERROR] Failed during GPT-4o override:", e)
+        return "[ERROR] Failed to generate response using override_with_4o"
