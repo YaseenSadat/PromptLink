@@ -90,10 +90,11 @@ const ContextProvider = ({ children }) => {
             });
     
             const data = await response.json();
-            const aiResponse = data.response;
+            const { response: aiResponse, score, model } = data;
     
-            // Apply same formatting logic you already had
-            const responseArray = aiResponse.split("**");
+            const fullText = `${aiResponse}\n\n**Score:** ${score}\n**Model used:** ${model}`;
+    
+            const responseArray = fullText.split("**");
             let formattedResponse = "";
             for (let i = 0; i < responseArray.length; i++) {
                 if (i % 2 === 1) {
@@ -116,6 +117,7 @@ const ContextProvider = ({ children }) => {
         setLoading(false);
         setInput("");
     };
+    
     
 
     /**

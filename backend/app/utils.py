@@ -151,7 +151,7 @@ async def route_prompt(prompt: str):
 
     print(f"[DEBUG] CoT Score: {cot_score * 2}/20")
     CACHE.append((incoming_vec, intent, response.content))
-    return intent, response.content, score
+    return intent, response.content, score, model_used
 
 # ======================== Scoring and Evaluation ========================
 
