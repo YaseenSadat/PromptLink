@@ -13,8 +13,13 @@ from langchain_openai import OpenAIEmbeddings
 
 from langchain_google_genai import ChatGoogleGenerativeAI
 
+from collections import deque
+
 load_dotenv()
 
+# Cache: stores tuples of (embedding_vector, intent, response)
+CACHE = deque(maxlen=100)  # Least-recently-used cache of 100 prompts
+SIMILARITY_THRESHOLD = 0.92  # You can adjust this
 
 NEO4J_URI = os.getenv("NEO4J_URI")
 NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
@@ -120,6 +125,16 @@ async def route_prompt(prompt: str):
     intent = detect_intent(prompt)
     template = prompt_templates[intent]
 
+    # Embed the incoming prompt
+    incoming_vec = embedding_model.embed_query(prompt)
+
+    # Check for similar past prompts
+    for cached_vec, cached_intent, cached_response in CACHE:
+        cosine_sim = np.dot(incoming_vec, cached_vec) / (np.linalg.norm(incoming_vec) * np.linalg.norm(cached_vec))
+        if cosine_sim > SIMILARITY_THRESHOLD and cached_intent == intent:
+            print("[CACHE HIT] Reusing previous response")
+            return intent, cached_response, 100  # score is max for cache hit
+        
     # Choose model based on intent
     if intent in {"analyze", "compare", "review", "expand"}:
         llm_model = llm_gemini
@@ -149,6 +164,8 @@ async def route_prompt(prompt: str):
 
     print(f"[DEBUG] CoT Score: {cot_score * 2}/20")
 
+    # Add to cache
+    CACHE.append((incoming_vec, intent, response.content))
     return intent, response.content, score
 
 
