@@ -11,6 +11,9 @@ from datetime import datetime
 import numpy as np
 from langchain_openai import OpenAIEmbeddings
 
+from google import genai
+from langchain_google_genai import ChatGoogleGenerativeAI
+
 load_dotenv()
 
 
@@ -20,6 +23,13 @@ NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
 
 llm_3 = ChatOpenAI(model="gpt-3.5-turbo", openai_api_key=os.getenv("OPENAI_API_KEY"))
 llm_4o = ChatOpenAI(model="gpt-4o", openai_api_key=os.getenv("OPENAI_API_KEY"))
+
+llm_gemini = ChatGoogleGenerativeAI(
+    model="gemini-2.0-flash",
+    google_api_key=os.getenv("GOOGLE_API_KEY"),
+    temperature=0.7
+)
+
 embedding_model = OpenAIEmbeddings(openai_api_key=os.getenv("OPENAI_API_KEY"))
 
 # Define multiple prompt templates
@@ -112,12 +122,16 @@ def route_prompt(prompt: str):
     template = prompt_templates[intent]
 
     # Choose model based on intent
-    if intent in {"code", "explain", "reason"}:
+    if intent in {"analyze", "compare", "review", "expand"}:
+        llm_model = llm_gemini
+        model_used = "gemini-2.0-flash"
+    elif intent in {"code", "explain", "reason"}:
         llm_model = llm_4o
         model_used = "gpt-4o"
     else:
         llm_model = llm_3
         model_used = "gpt-3.5-turbo"
+
 
     print(f"[DEBUG] Intent: {intent} | Using model: {model_used}")
 
