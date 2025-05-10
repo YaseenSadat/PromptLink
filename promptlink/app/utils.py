@@ -11,7 +11,6 @@ from datetime import datetime
 import numpy as np
 from langchain_openai import OpenAIEmbeddings
 
-from google import genai
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 load_dotenv()
@@ -117,7 +116,7 @@ def detect_intent(prompt: str) -> str:
 
 
 # Main LangChain call
-def route_prompt(prompt: str):
+async def route_prompt(prompt: str):
     intent = detect_intent(prompt)
     template = prompt_templates[intent]
 
@@ -137,13 +136,13 @@ def route_prompt(prompt: str):
     print(f"[DEBUG] Intent: {intent} | Using model: {model_used}")
 
     chain = template | llm_model
-    response = chain.invoke({"input": prompt})
+    response = await chain.ainvoke({"input": prompt})
 
     # Run scoring
-    score = score_response(prompt, response.content, intent)
+    score = await score_response(prompt, response.content, intent)
 
     # Chain-of-thought score
-    cot_score = validate_chain_of_thought(response.content)
+    cot_score = await validate_chain_of_thought(response.content)
 
     # Log result
     log_to_neo4j(prompt, intent, response.content, score, cot_score)
@@ -210,7 +209,7 @@ def score_length(response: str, intent: str) -> int:
 
 
 
-def score_response(prompt: str, response: str, intent: str) -> int:
+async def score_response(prompt: str, response: str, intent: str) -> int:
     score = 0
 
     # --- 1. Length Score (0–20) ---
@@ -258,7 +257,7 @@ def score_response(prompt: str, response: str, intent: str) -> int:
         score += 5
 
     # --- 5. Chain-of-Thought Score (0–20) ---
-    cot_raw = validate_chain_of_thought(response)  # 0 to 10
+    cot_raw = await validate_chain_of_thought(response)  # 0 to 10
     score += cot_raw * 2
 
     # --- Intent override for translate ---
@@ -268,7 +267,7 @@ def score_response(prompt: str, response: str, intent: str) -> int:
     # --- Final Rounding ---
     return int(round(score / 10.0) * 10)
 
-def validate_chain_of_thought(response: str) -> float:
+async def validate_chain_of_thought(response: str) -> float:
     eval_prompt = f"""You are a reasoning evaluator. Analyze the following answer and rate how logically sound, step-by-step, and coherent the reasoning is.
 
 Answer:
@@ -280,7 +279,7 @@ Respond with a number from 0 to 10 only, no explanation."""
     print(eval_prompt)
 
     try:
-        evaluation = llm_3.invoke([HumanMessage(content=eval_prompt)])
+        evaluation = await llm_3.ainvoke([HumanMessage(content=eval_prompt)])
         print("[DEBUG] Raw LLM CoT score response:", evaluation.content)
 
         raw_score = int("".join(filter(str.isdigit, evaluation.content)))
@@ -291,7 +290,7 @@ Respond with a number from 0 to 10 only, no explanation."""
         print("[ERROR] Failed to extract CoT score:", str(e))
         return 0
     
-    
+
 def override_with_4o(prompt: str, intent: str):
     if intent == "summarize":
         custom_instruction = (
