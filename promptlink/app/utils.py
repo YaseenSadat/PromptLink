@@ -3,7 +3,7 @@
 # Standard libraries
 import os
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from collections import deque
 import numpy as np
 from dotenv import load_dotenv
@@ -147,7 +147,7 @@ async def route_prompt(prompt: str):
     score = await score_response(prompt, response.content, intent)
     cot_score = await validate_chain_of_thought(response.content)
 
-    log_to_neo4j(prompt, intent, response.content, score, cot_score)
+    log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used)
 
     print(f"[DEBUG] CoT Score: {cot_score * 2}/20")
     CACHE.append((incoming_vec, intent, response.content))
@@ -268,26 +268,31 @@ def override_with_4o(prompt: str, intent: str):
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
-def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float):
+def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float, model: str):
     with driver.session() as session:
         session.run(
-            """
-            MERGE (p:Prompt {text: $prompt})
-            MERGE (i:Intent {type: $intent})
-            CREATE (r:Response {
-                text: $response,
-                score: $score,
-                cot_score: $cot_score,
-                timestamp: datetime($timestamp)
-            })
-            MERGE (p)-[:HAS_INTENT]->(i)
-            MERGE (p)-[:GOT_RESPONSE]->(r)
-            MERGE (i)-[:TRIGGERED]->(r)
-            """,
-            prompt=prompt,
-            intent=intent,
-            response=response,
-            score=score,
-            cot_score=cot_score,
-            timestamp=datetime.utcnow().isoformat()
-        )
+        """
+        MERGE (p:Prompt {text: $prompt})
+        MERGE (i:Intent {type: $intent})
+        CREATE (r:Response {
+            text: $response,
+            score: $score,
+            cot_score: $cot_score,
+            model: $model,
+            timestamp: datetime($timestamp)
+        })
+        MERGE (p)-[:HAS_INTENT]->(i)
+        MERGE (p)-[:GOT_RESPONSE]->(r)
+        MERGE (i)-[:TRIGGERED]->(r)
+        """,
+        prompt=prompt,
+        intent=intent,
+        response=response,
+        score=score,
+        cot_score=cot_score,
+        model=model,
+        timestamp=datetime.now(timezone.utc).isoformat()
+
+
+    )
+
