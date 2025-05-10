@@ -1,0 +1,32 @@
+/*
+   This stylesheet provides global styles for the GenieAI application.
+   It includes basic resets, font styles, and root-level layout settings.
+*/
+
+/* Import the Outfit font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+
+/* Apply global box-sizing and reset padding and margins */
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  font-family: Outfit;
+}
+
+/* Style the root element where the React app renders */
+#root {
+  min-height: 100vh;
+  display: flex;              /* Ensures children components (Sidebar and Main) are flex items */
+  animation: fadeIn 1.5s;     /* Adds a fade-in animation when the app loads */
+}
+
+/* Define the fade-in animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
