@@ -49,3 +49,28 @@
   font-size: 14px;
 }
 
+
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.sidebar-wrapper {
+  /* width: 80px; */
+  height: 100vh;
+  background-color: black;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.main-wrapper {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  background-color: #0c1c23;
+}

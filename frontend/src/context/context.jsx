@@ -18,198 +18,91 @@
 import React, { createContext, useState } from "react";
 import { marked } from 'marked';
 
-// Create and export the Context to make it accessible across components
 export const Context = createContext();
 
-/**
- * ContextProvider Component
- * =========================
- * This component serves as the global state provider for the GenieAI application.
- * It maintains various states such as user input, previous prompts, and the result 
- * returned from the OpenAI API. The context value is shared with all children components.
- * 
- * @param {object} children - React components wrapped within the provider.
- * @returns {JSX.Element} - Context.Provider wrapping the application.
- */
 const ContextProvider = ({ children }) => {
-    // State for the current user input
-    const [input, setInput] = useState("");
+  const [input, setInput] = useState("");
+  const [prevPrompts, setPrevPrompts] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [chats, setChats] = useState([]);
 
-    // State for storing the most recent prompt sent
-    const [recentPrompt, setRecentPrompt] = useState("");
+  const newChat = () => {
+    setLoading(false);
+    setChats([]); // clear previous chats
+  };
 
-    // State for storing a list of previous prompts
-    const [prevPrompts, setPrevPrompts] = useState([]);
+  const onSent = async (prompt) => {
+    setLoading(true);
 
-    // State for toggling the result display
-    const [showResult, setShowResult] = useState(false);
+    const userPrompt = prompt || input;
+    if (!prompt) setPrevPrompts((prev) => [...prev, userPrompt]);
 
-    // State to indicate loading while waiting for the API response
-    const [loading, setLoading] = useState(false);
+    try {
+      const response = await fetch("http://localhost:8000/prompt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: userPrompt }),
+      });
 
-    // State to store and display the formatted result data
-    const [resultData, setResultData] = useState("");
+      const data = await response.json();
+      const { response: aiResponse, score, model } = data;
 
-    /**
-     * Delays appending a word to the resultData state for dynamic typing animation.
-     * @param {number} index - Index of the word in the response array.
-     * @param {string} nextWord - The word to append after the delay.
-     */
-    const delayPara = (index, nextWord) => {
-        setTimeout(() => {
-            setResultData((prev) => prev + nextWord); // Append the word to the previous state
-        }, 75 * index); // Delay each word by 75ms per index
-    };
+      const markdownSections = aiResponse.split(/```/);
+      let finalHtml = "";
 
-    /**
-     * Resets the application to start a new chat session.
-     * Clears loading state and hides any existing results.
-     */
-    const newChat = () => {
-        setLoading(false);
-        setShowResult(false);
-    };
-
-    // const onSent = async (prompt) => {
-    //     setResultData("");
-    //     setLoading(true);
-    //     setShowResult(true);
-    
-    //     let userPrompt = prompt || input;
-    //     if (!prompt) {
-    //         setPrevPrompts((prev) => [...prev, userPrompt]);
-    //     }
-    //     setRecentPrompt(userPrompt);
-    
-    //     try {
-    //         const response = await fetch("http://localhost:8000/prompt", {
-    //             method: "POST",
-    //             headers: {
-    //                 "Content-Type": "application/json",
-    //             },
-    //             body: JSON.stringify({ prompt: userPrompt }),
-    //         });
-    
-    //         const data = await response.json();
-    //         const { response: aiResponse, score, model } = data;
-    
-    //         const fullText = `${aiResponse}\n\n**Score:** ${score}\n**Model used:** ${model}`;
-    
-    //         const responseArray = fullText.split("**");
-    //         let formattedResponse = "";
-    //         for (let i = 0; i < responseArray.length; i++) {
-    //             if (i % 2 === 1) {
-    //                 formattedResponse += `<b>${responseArray[i]}</b>`;
-    //             } else {
-    //                 formattedResponse += responseArray[i];
-    //             }
-    //         }
-    
-    //         const newResponseArray = formattedResponse.split("*").join("</br>").split(" ");
-    //         for (let i = 0; i < newResponseArray.length; i++) {
-    //             delayPara(i, newResponseArray[i] + " ");
-    //         }
-    
-    //     } catch (error) {
-    //         console.error("Failed to fetch:", error);
-    //         setResultData("❌ Failed to connect to the backend.");
-    //     }
-    
-    //     setLoading(false);
-    //     setInput("");
-    // };
-    
-    const onSent = async (prompt) => {
-        setResultData("");
-        setLoading(true);
-        setShowResult(true);
-      
-        const userPrompt = prompt || input;
-        if (!prompt) setPrevPrompts((prev) => [...prev, userPrompt]);
-        setRecentPrompt(userPrompt);
-      
-        try {
-          const response = await fetch("http://localhost:8000/prompt", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt: userPrompt }),
-          });
-      
-          const data = await response.json();
-          const { response: aiResponse, score, model } = data;
-      
-          const markdownSections = aiResponse.split(/```/);
-          let finalHtml = "";
-      
-        //   for (let i = 0; i < markdownSections.length; i++) {
-        //     if (i % 2 === 1) {
-        //       // Optional: detect language (or just default to js for now)
-        //       finalHtml += `<pre class="code-block"><code class="language-javascript">${markdownSections[i]}</code></pre>`;
-        //     } else {
-        //       finalHtml += `<p>${markdownSections[i].replace(/\n/g, "<br/>")}</p>`;
-        //     }
-        //   }
-
-        for (let i = 0; i < markdownSections.length; i++) {
-            if (i % 2 === 1) {
-              finalHtml += `<pre class="code-block"><code class="language-javascript">${markdownSections[i]}</code></pre>`;
-            } else {
-              const html = marked.parse(markdownSections[i]);
-              finalHtml += `<div class="markdown-text">${html}</div>`;
-            }
-          }
-          
-          const temp_model = String(model).toUpperCase();
-      
-          finalHtml += `
-            <div class="meta-box">
-              <p><strong>Score:</strong> ${score}</p>
-              <p><strong>Model used:</strong> ${temp_model}</p>
-            </div>
-          `;
-      
-          setResultData(finalHtml);
-      
-          // Trigger Prism highlighting after DOM update
-          setTimeout(() => {
-            if (window.Prism) {
-              window.Prism.highlightAll();
-            }
-          }, 0);
-        } catch (err) {
-          console.error(err);
-          setResultData("❌ Failed to connect to the backend.");
+      for (let i = 0; i < markdownSections.length; i++) {
+        if (i % 2 === 1) {
+          finalHtml += `<pre class="code-block"><code class="language-javascript">${markdownSections[i]}</code></pre>`;
+        } else {
+          const html = marked.parse(markdownSections[i]);
+          finalHtml += `<div class="markdown-text">${html}</div>`;
         }
-      
-        setLoading(false);
-        setInput("");
-      };
-      
-    
+      }
 
-    /**
-     * The value provided to the context consumers.
-     * Contains the application state and utility functions.
-     */
-    return (
-        <Context.Provider
-            value={{
-                input,
-                setInput,
-                prevPrompts,
-                setPrevPrompts,
-                recentPrompt,
-                setRecentPrompt,
-                showResult,
-                loading,
-                resultData,
-                onSent,
-                newChat,
-            }}
-        >
-            {children}
-        </Context.Provider>
-    );
+      const temp_model = String(model).toUpperCase();
+      finalHtml += `
+        <div class="meta-box">
+          <p><strong>Score:</strong> ${score}</p>
+          <p><strong>Model used:</strong> ${temp_model}</p>
+        </div>
+      `;
+
+      setChats((prev) => [...prev, { prompt: userPrompt, response: finalHtml }]);
+
+      setTimeout(() => {
+        if (window.Prism) window.Prism.highlightAll();
+        const lastChat = document.querySelector(".result:last-child");
+        if (lastChat) lastChat.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+
+    } catch (err) {
+      console.error(err);
+      setChats((prev) => [...prev, {
+        prompt: userPrompt,
+        response: "Error: Failed to connect to the backend."
+      }]);
+    }
+
+    setInput("");
+    setLoading(false);
+  };
+
+  return (
+    <Context.Provider
+      value={{
+        input,
+        setInput,
+        prevPrompts,
+        setPrevPrompts,
+        chats,
+        loading,
+        onSent,
+        newChat,
+      }}
+    >
+      {children}
+    </Context.Provider>
+  );
 };
 
 export default ContextProvider;

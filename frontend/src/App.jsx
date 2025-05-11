@@ -3,20 +3,7 @@
    It combines the `Sidebar` and `Main` components to form the primary user interface.
 */
 
-// import React from 'react';
-// import Sidebar from './components/Sidebar/Sidebar'; // Sidebar navigation component
-// import Main from './components/Main/Main';         // Main content area component
 
-// const App = () => {
-//   return (
-//     <>
-//       <Sidebar /> {/* Renders the sidebar for navigation */}
-//       <Main />    {/* Renders the main content of the application */}
-//     </>
-//   );
-// };
-
-// export default App;
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
 import Main from './components/Main/Main';
@@ -81,10 +68,15 @@ const App = () => {
   }
 
   return (
-    <>
-      <Sidebar />
-      <Main />
-    </>
+    <div className="app-container">
+  <div className="sidebar-wrapper">
+    <Sidebar />
+  </div>
+  <div className="main-wrapper">
+    <Main />
+  </div>
+</div>
+
   );
 };
 
