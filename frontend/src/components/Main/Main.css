@@ -149,7 +149,8 @@
     margin: 40px 0px;
     display: flex;
     align-items: center;
-    gap: 20px;
+    gap: 30px;
+    padding-left: 10px;
 }
 
 .result img{
@@ -161,8 +162,10 @@
     color:white;
     display: flex;
     align-items: start;
-    gap: 20px;
+    gap: 30px;
+    padding-left: 10px;
 }
+
 
 .loader{
     width: 100%;
@@ -292,4 +295,40 @@
   .main .result {
     margin-bottom: 30px;
     width: 100%;
+  }
+
+  .response-content {
+    font-family: 'Inter', sans-serif;
+    line-height: 1.7;
+    font-size: 1rem;
+    color: #f4f4f4;
+  }
+
+  .response-content h1,
+  .response-content h2,
+  .response-content h3 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  .response-content ul {
+    margin-left: 1.5rem;
+    list-style: disc;
+  }
+
+  .response-content ol {
+    margin-left: 1.5rem;
+    list-style: decimal;
+  }
+
+  .response-content p {
+    margin-bottom: 1rem;
+  }
+
+  .response-content code {
+    background-color: #f4f4f4;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: monospace;
   }

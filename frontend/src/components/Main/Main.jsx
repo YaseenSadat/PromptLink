@@ -8,6 +8,7 @@ import { getAuth, signOut } from 'firebase/auth';
 const Main = () => {
   const {
     onSent,
+    onEnhance,
     input,
     setInput,
     chats,
@@ -21,6 +22,12 @@ const Main = () => {
       onSent(); // Call the onSent function
     }
   };
+
+  const handleCardClick = (prompt) => {
+    setInput(prompt);
+  };
+  
+  
 
   // Auto-scroll to the search box whenever chats or loading state changes
   useEffect(() => {
@@ -51,7 +58,7 @@ const Main = () => {
 
   const handleLogout = async () => {
     const auth = getAuth();
-    await signOut(auth); // ⬅️ Sign out using Firebase
+    await signOut(auth); // Sign out using Firebase
   };
 
   return (
@@ -80,19 +87,19 @@ const Main = () => {
               <p>How can I help you today?</p>
             </div>
             <div className="cards">
-              <div className="card">
+              <div className="card" onClick={() => handleCardClick('Suggest beautiful places to see on an upcoming road trip')}>
                 <p>Suggest beautiful places to see on an upcoming road trip</p>
                 <img src={assets.compass_icon} alt="Compass Icon" />
               </div>
-              <div className="card">
+              <div className="card" onClick={() => handleCardClick('Summarize this concept: urban planning')}>
                 <p>Summarize this concept: urban planning</p>
                 <img src={assets.bulb_icon} alt="Bulb Icon" />
               </div>
-              <div className="card">
+              <div className="card" onClick={() => handleCardClick('Brainstorm team bonding activities for our work retreat')}>
                 <p>Brainstorm team bonding activities for our work retreat</p>
                 <img src={assets.message_icon} alt="Message Icon" />
               </div>
-              <div className="card">
+              <div className="card" onClick={() => handleCardClick('Improve the readability of the following code')}>
                 <p>Improve the readability of the following code</p>
                 <img src={assets.code_icon} alt="Code Icon" />
               </div>
@@ -158,9 +165,9 @@ const Main = () => {
         </div>
 
         {/* Enhance button placed separately so it's anchored bottom-right */}
-        <button className="enhance-btn" onClick={() => console.log("Enhance clicked")}>
-          Enhance Response?
-        </button>
+        <button className="enhance-btn" onClick={onEnhance}>
+        Enhance Response?
+      </button>
 
       </div>
     </div>
