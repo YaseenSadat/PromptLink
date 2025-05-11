@@ -123,11 +123,13 @@ async def route_prompt(prompt: str):
     incoming_vec = embedding_model.embed_query(prompt)
 
     # Check cache
-    for cached_vec, cached_intent, cached_response in CACHE:
+    for cached_vec, cached_intent, cached_response, cached_model in CACHE:
         cosine_sim = np.dot(incoming_vec, cached_vec) / (np.linalg.norm(incoming_vec) * np.linalg.norm(cached_vec))
         if cosine_sim > SIMILARITY_THRESHOLD and cached_intent == intent:
             print("[CACHE HIT] Reusing previous response")
-            return intent, cached_response, 100
+            return intent, cached_response, 100, cached_model
+
+
 
     # Select model based on intent
     if intent in {"analyze", "compare", "review", "expand"}:
@@ -150,7 +152,7 @@ async def route_prompt(prompt: str):
     log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used)
 
     print(f"[DEBUG] CoT Score: {cot_score * 2}/20")
-    CACHE.append((incoming_vec, intent, response.content))
+    CACHE.append((incoming_vec, intent, response.content, model_used))
     return intent, response.content, score, model_used
 
 # ======================== Scoring and Evaluation ========================
