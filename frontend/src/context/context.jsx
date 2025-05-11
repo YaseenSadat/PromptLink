@@ -16,6 +16,7 @@
 */
 
 import React, { createContext, useState } from "react";
+import { marked } from 'marked';
 
 // Create and export the Context to make it accessible across components
 export const Context = createContext();
@@ -69,55 +70,121 @@ const ContextProvider = ({ children }) => {
         setShowResult(false);
     };
 
+    // const onSent = async (prompt) => {
+    //     setResultData("");
+    //     setLoading(true);
+    //     setShowResult(true);
+    
+    //     let userPrompt = prompt || input;
+    //     if (!prompt) {
+    //         setPrevPrompts((prev) => [...prev, userPrompt]);
+    //     }
+    //     setRecentPrompt(userPrompt);
+    
+    //     try {
+    //         const response = await fetch("http://localhost:8000/prompt", {
+    //             method: "POST",
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //             },
+    //             body: JSON.stringify({ prompt: userPrompt }),
+    //         });
+    
+    //         const data = await response.json();
+    //         const { response: aiResponse, score, model } = data;
+    
+    //         const fullText = `${aiResponse}\n\n**Score:** ${score}\n**Model used:** ${model}`;
+    
+    //         const responseArray = fullText.split("**");
+    //         let formattedResponse = "";
+    //         for (let i = 0; i < responseArray.length; i++) {
+    //             if (i % 2 === 1) {
+    //                 formattedResponse += `<b>${responseArray[i]}</b>`;
+    //             } else {
+    //                 formattedResponse += responseArray[i];
+    //             }
+    //         }
+    
+    //         const newResponseArray = formattedResponse.split("*").join("</br>").split(" ");
+    //         for (let i = 0; i < newResponseArray.length; i++) {
+    //             delayPara(i, newResponseArray[i] + " ");
+    //         }
+    
+    //     } catch (error) {
+    //         console.error("Failed to fetch:", error);
+    //         setResultData("❌ Failed to connect to the backend.");
+    //     }
+    
+    //     setLoading(false);
+    //     setInput("");
+    // };
+    
     const onSent = async (prompt) => {
         setResultData("");
         setLoading(true);
         setShowResult(true);
-    
-        let userPrompt = prompt || input;
-        if (!prompt) {
-            setPrevPrompts((prev) => [...prev, userPrompt]);
-        }
+      
+        const userPrompt = prompt || input;
+        if (!prompt) setPrevPrompts((prev) => [...prev, userPrompt]);
         setRecentPrompt(userPrompt);
-    
+      
         try {
-            const response = await fetch("http://localhost:8000/prompt", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ prompt: userPrompt }),
-            });
-    
-            const data = await response.json();
-            const { response: aiResponse, score, model } = data;
-    
-            const fullText = `${aiResponse}\n\n**Score:** ${score}\n**Model used:** ${model}`;
-    
-            const responseArray = fullText.split("**");
-            let formattedResponse = "";
-            for (let i = 0; i < responseArray.length; i++) {
-                if (i % 2 === 1) {
-                    formattedResponse += `<b>${responseArray[i]}</b>`;
-                } else {
-                    formattedResponse += responseArray[i];
-                }
+          const response = await fetch("http://localhost:8000/prompt", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt: userPrompt }),
+          });
+      
+          const data = await response.json();
+          const { response: aiResponse, score, model } = data;
+      
+          const markdownSections = aiResponse.split(/```/);
+          let finalHtml = "";
+      
+        //   for (let i = 0; i < markdownSections.length; i++) {
+        //     if (i % 2 === 1) {
+        //       // Optional: detect language (or just default to js for now)
+        //       finalHtml += `<pre class="code-block"><code class="language-javascript">${markdownSections[i]}</code></pre>`;
+        //     } else {
+        //       finalHtml += `<p>${markdownSections[i].replace(/\n/g, "<br/>")}</p>`;
+        //     }
+        //   }
+
+        for (let i = 0; i < markdownSections.length; i++) {
+            if (i % 2 === 1) {
+              finalHtml += `<pre class="code-block"><code class="language-javascript">${markdownSections[i]}</code></pre>`;
+            } else {
+              const html = marked.parse(markdownSections[i]);
+              finalHtml += `<div class="markdown-text">${html}</div>`;
             }
-    
-            const newResponseArray = formattedResponse.split("*").join("</br>").split(" ");
-            for (let i = 0; i < newResponseArray.length; i++) {
-                delayPara(i, newResponseArray[i] + " ");
+          }
+          
+          const temp_model = String(model).toUpperCase();
+      
+          finalHtml += `
+            <div class="meta-box">
+              <p><strong>Score:</strong> ${score}</p>
+              <p><strong>Model used:</strong> ${temp_model}</p>
+            </div>
+          `;
+      
+          setResultData(finalHtml);
+      
+          // Trigger Prism highlighting after DOM update
+          setTimeout(() => {
+            if (window.Prism) {
+              window.Prism.highlightAll();
             }
-    
-        } catch (error) {
-            console.error("Failed to fetch:", error);
-            setResultData("❌ Failed to connect to the backend.");
+          }, 0);
+        } catch (err) {
+          console.error(err);
+          setResultData("❌ Failed to connect to the backend.");
         }
-    
+      
         setLoading(false);
         setInput("");
-    };
-    
+      };
+      
     
 
     /**

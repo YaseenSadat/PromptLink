@@ -93,6 +93,7 @@
 
 .search-box{
     display: flex;
+    
     align-items: center;
     justify-content: space-between;
     gap: 20px;
@@ -109,6 +110,7 @@
 .search-box input{
     flex: 1;
     background: transparent;
+    color:white;
     border: none;
     outline: none;
     padding: 8px;

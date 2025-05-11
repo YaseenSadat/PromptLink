@@ -9,6 +9,8 @@ import './Main.css';
 import { assets } from '../../assets/assets';
 import { Context } from '../../context/context';
 
+
+
 const Main = () => {
     // Destructure state and functions from the Context API
     const { onSent, recentPrompt, showResult, loading, resultData, setInput, input } = useContext(Context);

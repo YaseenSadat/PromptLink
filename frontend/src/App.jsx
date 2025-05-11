@@ -21,6 +21,9 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
 import Main from './components/Main/Main';
 import Loading from './components/Loading/Loading';
+import 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css'; // Or any other Prism theme
+import { marked } from 'marked';
 
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
