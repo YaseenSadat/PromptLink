@@ -10,20 +10,20 @@ import Main from './components/Main/Main';
 import Loading from './components/Loading/Loading';
 import 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css'; // Or any other Prism theme
-import { marked } from 'marked';
+import { toast } from 'react-toastify';
 
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDH74-BZSEF5s2Ko8o0asbnrhwDk_krGDg",
-  authDomain: "prompt-link.firebaseapp.com",
-  projectId: "prompt-link",
-  storageBucket: "prompt-link.firebasestorage.app",
-  messagingSenderId: "711312347665",
-  appId: "1:711312347665:web:b5df0e356a6e42561157b0",
-  measurementId: "G-GNY7SXJ7XJ"
-};
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+}; 
 
 initializeApp(firebaseConfig);
 const auth = getAuth();
@@ -49,9 +49,20 @@ const App = () => {
         await createUserWithEmailAndPassword(auth, email, password);
       }
     } catch (error) {
-      console.error('Auth error:', error.message);
+      if (authMode === 'login') {
+        toast.error("Incorrect email or password.");
+      } else if (authMode === 'signup') {
+        if (error.code === 'auth/email-already-in-use') {
+          toast.error("User already exists. Please log in.");
+        } else if (error.code === 'auth/weak-password') {
+          toast.error("Password is too weak. Minimum 6 characters.");
+        } else {
+          toast.error("Signup failed. Please try again.");
+        }
+      }
     }
   };
+  
 
   if (!user) {
     return (

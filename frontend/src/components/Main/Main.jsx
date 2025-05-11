@@ -1,17 +1,9 @@
-// /*
-//    This file defines the main content area for the GenieAI application. 
-//    It interacts with the Context API to manage prompts, results, and loading states. 
-//    It displays greeting cards or results dynamically based on the application's state.
-// */
-
-
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import './Main.css';
-import Prism from 'prismjs';
-import 'prismjs/themes/prism-tomorrow.css'; // You can swap with any Prism theme
-import 'prismjs/components/prism-python'; // Add more as needed
 import { assets } from '../../assets/assets';
 import { Context } from '../../context/context';
+import { getAuth, signOut } from 'firebase/auth';
+
 
 const Main = () => {
   const {
@@ -22,22 +14,63 @@ const Main = () => {
     loading,
   } = useContext(Context);
 
-<<<<<<< HEAD
-    useEffect(() => {
-        Prism.highlightAll();
-    }, [resultData]);
+  const searchBoxRef = useRef(null);
 
-    return (
-        <div className="main">
-            {/* Navigation bar with application name and user icon */}
-            <div className="nav">
-                <p>GenieAI</p>
-=======
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter' && input.trim()) { // Only trigger if input is not empty
+      onSent(); // Call the onSent function
+    }
+  };
+
+  // Auto-scroll to the search box whenever chats or loading state changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchBoxRef.current) {
+        searchBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 500); // Adjust the delay time here (500ms in this case)
+
+    return () => clearTimeout(timer); // Cleanup timer on component unmount
+  }, [chats, loading, input]); // Dependencies for scrolling
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
+
+  const handleClickOutside = (e) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+      setDropdownOpen(false);
+    }
+  };
+
+  useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    const auth = getAuth();
+    await signOut(auth); // ⬅️ Sign out using Firebase
+  };
+
   return (
     <div className="main">
       <div className="nav">
         <p>PromptLink</p>
-        <img src={assets.logo} alt="User Icon" />
+        <div className="dropdown-wrapper" ref={dropdownRef}>
+          <img
+            src={assets.logo}
+            alt="User Icon"
+            className="nav-logo"
+            onClick={toggleDropdown}
+          />
+          {dropdownOpen && (
+            <div className="dropdown-menu">
+              <button onClick={handleLogout}>Log Out</button>
+            </div>
+          )}
+        </div>
       </div>
       <div className="main-container">
         {chats.length === 0 ? (
@@ -64,72 +97,71 @@ const Main = () => {
                 <img src={assets.code_icon} alt="Code Icon" />
               </div>
             </div>
-          </>
-        ) : (
-          chats.map((chat, index) => (
-            <div key={index} className="result">
-              <div className="result-title">
->>>>>>> origin/test4
-                <img src={assets.user_icon} alt="User Icon" />
-                <p>{chat.prompt}</p>
-              </div>
-              <div className="result-data">
-                <img src={assets.logo} alt="Gemini Icon" />
-                {loading && index === chats.length - 1 ? (
+            {loading && (
+              <div className="loading-initial">
+                <div className="result-data">
+                  <img src={assets.logo} alt="Gemini Icon" />
                   <div className="loader">
                     <hr /><hr /><hr />
                   </div>
-                ) : (
-<<<<<<< HEAD
-                    <div className="result">
-                        {/* Result title displaying the recent prompt */}
-                        <div className="result-title">
-                            <img src={assets.user_icon} alt="User Icon" />
-                            <p>{recentPrompt}</p>
-                        </div>
-                        <div className="result-data">
-                            <img src={assets.gemini_icon} alt="Gemini Icon" />
-                            {loading ? (
-                                // Loader animation while results are being fetched
-                                <div className="loader">
-                                    <hr />
-                                    <hr />
-                                    <hr />
-                                </div>
-                            ) : (
-                                // Display the AI's result dynamically
-                                <div className="ai-result" dangerouslySetInnerHTML={{ __html: resultData }}></div>
-                            )}
-                        </div>
-                    </div>
-=======
-                  <div dangerouslySetInnerHTML={{ __html: chat.response }} />
->>>>>>> origin/test4
-                )}
+                </div>
               </div>
-            </div>
-          ))
+            )}
+          </>
+        ) : (
+          <div className="chat-history">
+            {chats.map((chat, index) => (
+              <div key={index} className="result">
+                <div className="result-title">
+                  <img src={assets.user_icon} alt="User Icon" />
+                  <p>{chat.prompt}</p>
+                </div>
+                <div className="result-data">
+                  <img src={assets.logo} alt="Gemini Icon" />
+                  <div className="response-content" dangerouslySetInnerHTML={{ __html: chat.response }} />
+                </div>
+              </div>
+            ))}
+
+            {/* Separate loading indicator that appears after all existing messages */}
+            {loading && (
+              <div className="result">
+                <div className="result-data">
+                  <img src={assets.logo} alt="Gemini Icon" />
+                  <div className="loader">
+                    <hr /><hr /><hr />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         )}
         <div className="main-bottom">
-          <div className="search-box">
+          <div className="search-box" ref={searchBoxRef}>
             <input
               onChange={(e) => setInput(e.target.value)}
               value={input}
               type="text"
               placeholder="Enter a prompt here"
+              onKeyDown={handleKeyPress}
             />
             <div>
-              <img src={assets.gallery_icon} alt="Gallery Icon" />
-              <img src={assets.mic_icon} alt="Mic Icon" />
               {input ? (
                 <img onClick={() => onSent()} src={assets.send_icon} alt="Send Icon" />
               ) : null}
             </div>
           </div>
+
           <p className="bottom-info">
             PromptLink may display inaccurate info, including about people, so double-check its responses.
           </p>
         </div>
+
+        {/* Enhance button placed separately so it's anchored bottom-right */}
+        <button className="enhance-btn" onClick={() => console.log("Enhance clicked")}>
+          Enhance Response?
+        </button>
+
       </div>
     </div>
   );

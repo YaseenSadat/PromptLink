@@ -26,6 +26,7 @@
 }
 
 .main-container{
+    overflow-y: auto;
     max-width: 900px;
     margin: auto;
 }
@@ -56,6 +57,7 @@
     height: 200px;
     padding: 15px;
     background-color: #3b7779;
+    border: 4px solid black;
     border-radius: 10px;
     position: relative;
     cursor: pointer;
@@ -98,6 +100,7 @@
     justify-content: space-between;
     gap: 20px;
     background-color: #3b7779;
+    border: 4px solid black;
     padding: 10px 20px;
     border-radius: 50px;
 }
@@ -131,8 +134,8 @@
 }
 
 .result{
-    padding: 0px 5%;
-    max-height: 70vh;
+    padding: 0px;
+    /* max-height: 70vh; */
     overflow-y: scroll;
 }
 
@@ -208,24 +211,85 @@
     }
 }
 
-<<<<<<< HEAD
-.ai-result pre {
-    border-radius: 10px;
-    padding: 16px;
-    overflow-x: auto;
-    background: #2d2d2d;
-    margin-top: 20px;
-    white-space: pre-wrap;
-    line-height: 1.5;
-}
-
-.ai-result code {
-    font-family: 'Fira Code', monospace;
-    font-size: 0.95rem;
-    color: #f8f8f2;
-}
-=======
 ::placeholder { /* Most modern browsers support this now. */
     color:    white;
  }
->>>>>>> origin/test4
+
+ /* === Dropdown Styles === */
+ .dropdown-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .nav-logo {
+    cursor: pointer;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    object-fit: cover;
+    transition: transform 0.2s ease;
+  }
+  
+  .nav-logo:hover {
+    transform: scale(1.05);
+  }
+  
+  .dropdown-menu {
+    position: absolute;
+    top: 45px;
+    right: 0;
+    background-color: #1c2f36;
+    padding: 5px 0;
+    border-radius: 8px;
+    border: 4px solid black;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 20;
+    min-width: 90px; /* smaller width */
+    text-align: center;
+  }
+  
+  .dropdown-menu button {
+    background: none;
+    border: none;
+    color: #ffffff;
+    width: 100%;
+    padding: 6px 0; /* less padding */
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s ease;
+  }
+  
+  .dropdown-menu button:hover {
+    background-color: #2c4e56;
+  }
+  
+  .enhance-btn {
+    position: fixed;
+    bottom: 50px;
+    right: 30px;
+    background-color: #3b7779;
+    color: white;
+    padding: 12px 20px;
+    border: 4px solid black;
+    border-radius: 12px;
+    font-size: 15px;
+    cursor: pointer;
+    z-index: 999;
+    transition: background-color 0.3s ease;
+  }
+  
+  .enhance-btn:hover {
+    background-color: #2563eb;
+  }
+  
+  .loading-initial {
+    margin-top: 30px;
+    width: 100%;
+  }
+
+  .main .result {
+    margin-bottom: 30px;
+    width: 100%;
+  }

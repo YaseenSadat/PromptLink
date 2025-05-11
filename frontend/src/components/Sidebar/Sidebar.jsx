@@ -2,12 +2,10 @@
    Sidebar.jsx (React Native Web)
    ==============================
    This component renders a sidebar for the GenieAI application. It provides navigation functionality 
-   for creating new chats, viewing recent prompts, and accessing bottom menu items (Help, Activity, and Settings).
-
+   for creating new chats, and viewing recent prompts
    Key Features:
    - Top Section: Includes a toggleable menu and a "New Chat" button.
    - Middle Section: Displays a list of recent prompts when extended.
-   - Bottom Section: Displays icons for Help, Activity, and Settings, aligned at the bottom.
 
    Dependencies:
    - React Native Web components (`View`, `Text`, `TouchableOpacity`, `Image`, etc.) for UI rendering.
@@ -31,7 +29,6 @@ import { Context } from '../../context/context'; // Global Context for state man
  * Features:
  * - Toggleable sidebar that expands to show additional text (e.g., "New Chat", "Help").
  * - Displays a list of previous prompts.
- * - Aligns bottom items (Help, Activity, Settings) to the bottom of the sidebar.
  * 
  * @returns {JSX.Element} - Sidebar component with top, middle, and bottom sections.
  */
@@ -80,24 +77,6 @@ const Sidebar = () => {
                     </ScrollView>
                 )}
             </View>
-
-            {/* Bottom Section: Help, Activity, and Settings */}
-            <View style={styles.bottom}>
-                <TouchableOpacity style={styles.bottomItem}>
-                    <Image source={assets.question_icon} style={styles.icon} />
-                    {extended && <Text style={styles.text}>Help</Text>}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.bottomItem}>
-                    <Image source={assets.history_icon} style={styles.icon} />
-                    {extended && <Text style={styles.text}>Activity</Text>}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.bottomItem}>
-                    <Image source={assets.setting_icon} style={styles.icon} />
-                    {extended && <Text style={styles.text}>Settings</Text>}
-                </TouchableOpacity>
-            </View>
         </View>
     );
 };
@@ -115,6 +94,7 @@ const styles = StyleSheet.create({
     /* Menu Icon Styling */
     menuIcon: {
         marginBottom: 30,
+        alignItems: 'center',
     },
 
     /* New Chat Button Styling */
@@ -145,15 +125,7 @@ const styles = StyleSheet.create({
         borderRadius: 25,
     },
 
-    /* Bottom Section (Help, Activity, Settings) */
-    bottom: {
-        gap: 20, /* Space between bottom items */
-    },
-    bottomItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-    },
+
 
     /* Icon Styling */
     icon: {
