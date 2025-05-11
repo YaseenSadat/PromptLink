@@ -1,85 +1,69 @@
-/*
-    context.jsx
-    ============
-    This file creates a Context for managing the global state of the GenieAI application. 
-    It provides a `ContextProvider` component that encapsulates the app's state logic and 
-    makes it available to all child components.
-
-    Key Features:
-    - Manages user input, recent prompts, loading state, and AI-generated responses.
-    - Provides utility functions to send prompts to the OpenAI API and handle responses.
-    - Dynamically formats and animates the AI-generated responses for better presentation.
-
-    Dependencies:
-    - React's Context API for global state management.
-    - `runChat` function from OpenAI configuration for sending user prompts to the AI.
-*/
-
 import React, { createContext, useState } from "react";
 
 // Create and export the Context to make it accessible across components
 export const Context = createContext();
 
-/**
- * ContextProvider Component
- * =========================
- * This component serves as the global state provider for the GenieAI application.
- * It maintains various states such as user input, previous prompts, and the result 
- * returned from the OpenAI API. The context value is shared with all children components.
- * 
- * @param {object} children - React components wrapped within the provider.
- * @returns {JSX.Element} - Context.Provider wrapping the application.
- */
 const ContextProvider = ({ children }) => {
-    // State for the current user input
     const [input, setInput] = useState("");
-
-    // State for storing the most recent prompt sent
     const [recentPrompt, setRecentPrompt] = useState("");
-
-    // State for storing a list of previous prompts
     const [prevPrompts, setPrevPrompts] = useState([]);
-
-    // State for toggling the result display
     const [showResult, setShowResult] = useState(false);
-
-    // State to indicate loading while waiting for the API response
     const [loading, setLoading] = useState(false);
-
-    // State to store and display the formatted result data
     const [resultData, setResultData] = useState("");
 
-    /**
-     * Delays appending a word to the resultData state for dynamic typing animation.
-     * @param {number} index - Index of the word in the response array.
-     * @param {string} nextWord - The word to append after the delay.
-     */
     const delayPara = (index, nextWord) => {
         setTimeout(() => {
-            setResultData((prev) => prev + nextWord); // Append the word to the previous state
-        }, 75 * index); // Delay each word by 75ms per index
+            setResultData((prev) => prev + nextWord);
+        }, 75 * index);
     };
 
-    /**
-     * Resets the application to start a new chat session.
-     * Clears loading state and hides any existing results.
-     */
     const newChat = () => {
         setLoading(false);
         setShowResult(false);
     };
 
+    const formatAIResponse = (text) => {
+        const codeBlocks = [];
+    
+        // Extract and temporarily replace code blocks
+        text = text.replace(/```(?:\w+)?([\s\S]*?)```/g, (_, code) => {
+            codeBlocks.push(code);
+            return `__CODE_BLOCK_${codeBlocks.length - 1}__`;
+        });
+    
+        // Escape HTML and format markdown headings (###, ##)
+        text = text
+            .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+            .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+            .replace(/\b(Explanation|Function Definition|Documentation|Multiplication|Return Statement|Example Usage|Key Points):\b/g, '<br/><b>$1:</b>')
+            .replace(/\n/g, '<br/>')
+            .replace(/Score:\s*(\d+)/, '<br/><br/><b>Score:</b> $1')
+            .replace(/Model used:\s*([^\n]+)/, '<br/><b>Model used:</b> $1');
+    
+        // Reinsert properly escaped code blocks without <br/>
+        codeBlocks.forEach((code, i) => {
+            const escaped = code.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const formatted = `<pre><code class="language-python">${escaped}</code></pre>`;
+            text = text.replace(`__CODE_BLOCK_${i}__`, formatted);
+        });
+    
+        return text;
+    };
+    
+    
+    
+
     const onSent = async (prompt) => {
         setResultData("");
         setLoading(true);
         setShowResult(true);
-    
+
         let userPrompt = prompt || input;
         if (!prompt) {
             setPrevPrompts((prev) => [...prev, userPrompt]);
         }
         setRecentPrompt(userPrompt);
-    
+
         try {
             const response = await fetch("http://localhost:8000/prompt", {
                 method: "POST",
@@ -88,42 +72,27 @@ const ContextProvider = ({ children }) => {
                 },
                 body: JSON.stringify({ prompt: userPrompt }),
             });
-    
+
             const data = await response.json();
             const { response: aiResponse, score, model } = data;
-    
-            const fullText = `${aiResponse}\n\n**Score:** ${score}\n**Model used:** ${model}`;
-    
-            const responseArray = fullText.split("**");
-            let formattedResponse = "";
-            for (let i = 0; i < responseArray.length; i++) {
-                if (i % 2 === 1) {
-                    formattedResponse += `<b>${responseArray[i]}</b>`;
-                } else {
-                    formattedResponse += responseArray[i];
-                }
-            }
-    
-            const newResponseArray = formattedResponse.split("*").join("</br>").split(" ");
+
+            const fullText = `${aiResponse}\n\nScore: ${score}\nModel used: ${model}`;
+            const formatted = formatAIResponse(fullText);
+
+            const newResponseArray = formatted.split("*").join("</br>").split(" ");
             for (let i = 0; i < newResponseArray.length; i++) {
                 delayPara(i, newResponseArray[i] + " ");
             }
-    
+
         } catch (error) {
             console.error("Failed to fetch:", error);
             setResultData("❌ Failed to connect to the backend.");
         }
-    
+
         setLoading(false);
         setInput("");
     };
-    
-    
 
-    /**
-     * The value provided to the context consumers.
-     * Contains the application state and utility functions.
-     */
     return (
         <Context.Provider
             value={{

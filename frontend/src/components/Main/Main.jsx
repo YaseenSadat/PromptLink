@@ -4,14 +4,21 @@
    It displays greeting cards or results dynamically based on the application's state.
 */
 
-import React, { useContext } from 'react';
+import React, { useContext, useEffect } from 'react';
 import './Main.css';
+import Prism from 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css'; // You can swap with any Prism theme
+import 'prismjs/components/prism-python'; // Add more as needed
 import { assets } from '../../assets/assets';
 import { Context } from '../../context/context';
 
 const Main = () => {
     // Destructure state and functions from the Context API
     const { onSent, recentPrompt, showResult, loading, resultData, setInput, input } = useContext(Context);
+
+    useEffect(() => {
+        Prism.highlightAll();
+    }, [resultData]);
 
     return (
         <div className="main">
@@ -68,7 +75,7 @@ const Main = () => {
                                 </div>
                             ) : (
                                 // Display the AI's result dynamically
-                                <p dangerouslySetInnerHTML={{ __html: resultData }}></p>
+                                <div className="ai-result" dangerouslySetInnerHTML={{ __html: resultData }}></div>
                             )}
                         </div>
                     </div>

@@ -198,3 +198,19 @@
         pad: 5pxx;
     }
 }
+
+.ai-result pre {
+    border-radius: 10px;
+    padding: 16px;
+    overflow-x: auto;
+    background: #2d2d2d;
+    margin-top: 20px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+.ai-result code {
+    font-family: 'Fira Code', monospace;
+    font-size: 0.95rem;
+    color: #f8f8f2;
+}
