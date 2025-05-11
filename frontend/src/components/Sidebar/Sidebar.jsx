@@ -105,7 +105,7 @@ const Sidebar = () => {
 const styles = StyleSheet.create({
     /* Sidebar Container */
     sidebar: {
-        backgroundColor: '#C7F9CC',
+        backgroundColor: 'black',
         height: '100vh', /* Full viewport height */
         paddingVertical: 25,
         paddingHorizontal: 15,
@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         gap: 10, /* Space between icon and text */
         padding: 12,
-        backgroundColor: '#80ED99',
+        backgroundColor: '#40747c',
         borderRadius: 25,
         marginBottom: 40, /* Space below New Chat button */
     },
@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     /* Text Styling */
     text: {
         fontSize: 14,
-        color: '#22577A',
+        color: 'white',
     },
 });
 
