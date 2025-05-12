@@ -152,8 +152,8 @@ const Main = () => {
         {chats.length === 0 ? (
           <>
             <div className="greet">
-              <p><span>Greetings!</span></p>
-              <p>How can I help you today?</p>
+              <p><span>Start typing. I’ll take it from here!</span></p>
+              <p>Your intent. The right model. The perfect response.</p>
             </div>
             <div className="cards">
               <div className="card" onClick={() => handleCardClick('Suggest beautiful places to see on an upcoming road trip')}>
