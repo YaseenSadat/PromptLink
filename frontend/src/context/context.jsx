@@ -46,7 +46,7 @@ const ContextProvider = ({ children }) => {
       });
 
       const data = await response.json();
-      const { response: aiResponse, score, model, served_from_cache } = data;
+      const { intent, response: aiResponse, score, model, served_from_cache } = data;
 
       setLastPrompt(userPrompt);
       setLastScore(score);
@@ -71,6 +71,7 @@ const ContextProvider = ({ children }) => {
       finalHtml += `
         <div class="meta-box">
           <p><strong>Score:</strong> ${score}</p>
+          <p><strong>Intent:</strong> ${intent.charAt(0).toUpperCase() + intent.slice(1)}</p>
           <p><strong>Model used:</strong> ${temp_model}</p>
           ${cacheInfo}
         </div>

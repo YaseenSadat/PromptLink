@@ -4,7 +4,6 @@
    and mounts it to the `#root` DOM element.
 */
 
-import { StrictMode } from 'react'; // Enables additional checks during development
 import { createRoot } from 'react-dom/client'; // React's API for rendering components
 import App from './App.jsx'; // Main app component
 import './index.css'; // Global styles

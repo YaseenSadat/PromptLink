@@ -332,3 +332,10 @@
     border-radius: 4px;
     font-family: monospace;
   }
+  /* === Prism.js Highlighting Fix === */
+
+.response-content code {
+    background-color: #333;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+  }
