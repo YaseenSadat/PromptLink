@@ -1,6 +1,8 @@
 import React, { createContext, useState } from "react";
 import { marked } from 'marked';
 import { assets } from '../assets/assets';
+import { getAuth } from 'firebase/auth';
+
 
 export const Context = createContext();
 
@@ -12,6 +14,9 @@ const ContextProvider = ({ children }) => {
   const [chats, setChats] = useState([]);
   const [lastPrompt, setLastPrompt] = useState("");
   const [lastScore, setLastScore] = useState(null);
+  const auth = getAuth();
+  const user = auth.currentUser;
+  const email = user?.email;
 
   const newChat = () => {
     setLoading(false);
@@ -38,7 +43,7 @@ const ContextProvider = ({ children }) => {
       const response = await fetch("http://localhost:8000/prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: userPrompt }),
+        body: JSON.stringify({ prompt: userPrompt, email }),
       });
 
       const data = await response.json();
@@ -112,7 +117,7 @@ const ContextProvider = ({ children }) => {
       const response = await fetch("http://localhost:8000/enhance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: userPrompt }),
+        body: JSON.stringify({ prompt: userPrompt, email }),
       });
 
       const data = await response.json();

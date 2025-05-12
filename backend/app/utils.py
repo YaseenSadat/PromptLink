@@ -117,7 +117,7 @@ def detect_intent(prompt: str) -> str:
 
 # ======================== Main Router ========================
 
-async def route_prompt(prompt: str):
+async def route_prompt(prompt: str, email: str | None = None):
     intent = detect_intent(prompt)
     template = prompt_templates[intent]
     incoming_vec = embedding_model.embed_query(prompt)
@@ -149,7 +149,7 @@ async def route_prompt(prompt: str):
     score = await score_response(prompt, response.content, intent)
     cot_score = await validate_chain_of_thought(response.content)
 
-    log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used)
+    log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used, email)
 
     print(f"[DEBUG] CoT Score: {cot_score * 2}/20")
     CACHE.append((incoming_vec, intent, response.content, model_used))
@@ -284,7 +284,7 @@ async def enhance_prompt(prompt: str):
         score = await score_response(prompt, response.content, intent)
         cot_score = await validate_chain_of_thought(response.content)
 
-        log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used)
+        log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used, email)
         CACHE.append((incoming_vec, intent, response.content, model_used))
 
         return intent, response.content, score, model_used
@@ -297,29 +297,28 @@ async def enhance_prompt(prompt: str):
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
-def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float, model: str):
+def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float, model: str, email=None):
     with driver.session() as session:
         session.run(
-        """
-        MERGE (p:Prompt {text: $prompt})
-        MERGE (i:Intent {type: $intent})
-        CREATE (r:Response {
-            text: $response,
-            score: $score,
-            cot_score: $cot_score,
-            model: $model,
-            timestamp: datetime($timestamp)
-        })
-        MERGE (p)-[:HAS_INTENT]->(i)
-        MERGE (p)-[:GOT_RESPONSE]->(r)
-        MERGE (i)-[:TRIGGERED]->(r)
-        """,
-        prompt=prompt,
-        intent=intent,
-        response=response,
-        score=score,
-        cot_score=cot_score,
-        model=model,
-        timestamp=datetime.now(timezone.utc).isoformat()
-    )
+    """
+    CREATE (i:Interaction {
+        prompt: $prompt,
+        intent: $intent,
+        response: $response,
+        score: $score,
+        cot_score: $cot_score,
+        model: $model,
+        email: $email,
+        timestamp: datetime()
+    })
+    """,
+    prompt=prompt,
+    intent=intent,
+    response=response,
+    score=score,
+    cot_score=cot_score,
+    model=model,
+    email=email,
+)
+
 

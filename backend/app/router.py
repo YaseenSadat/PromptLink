@@ -6,10 +6,11 @@ router = APIRouter()
 
 class PromptInput(BaseModel):
     prompt: str
+    email: str | None = None
 
 @router.post("/prompt")
 async def handle_prompt(data: PromptInput):
-    intent, response, score, model_used, served_from_cache = await route_prompt(data.prompt)
+    intent, response, score, model_used, served_from_cache = await route_prompt(data.prompt, data.email)
     return {
         "intent": intent,
         "response": response,
@@ -20,7 +21,7 @@ async def handle_prompt(data: PromptInput):
 
 @router.post("/enhance")
 async def enhance_route(data: PromptInput):
-    intent, response, score, model_used = await enhance_prompt(data.prompt)
+    intent, response, score, model_used = await enhance_prompt(data.prompt, data.email)
     return {
         "intent": intent,
         "response": response,
