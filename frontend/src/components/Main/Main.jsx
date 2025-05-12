@@ -41,7 +41,7 @@ const Main = () => {
         <p>After analyzing your input using LangChain’s intent classification system, we identified your intent as <strong>"{title.toLowerCase()}"</strong></p>
         <div style={{ marginBottom: '1rem' }}></div>
         <p style={{ marginBottom: '0.5rem' }}>To help the model generate a structured, in-depth response, we prefaced your prompt with:</p>
-        <p style={{ marginBottom: '1rem' }}><em><strong>"{systemPrompt}"</strong></em></p>
+        <p style={{ marginBottom: '1rem', textAlign: 'center' }}><em><strong>"{systemPrompt}"</strong></em></p>
         <p>The model we feel that will be best suited to give you the most effective and efficient response is <strong>"{model}"</strong> {reason}</p>
       </>
     );
@@ -76,7 +76,7 @@ const Main = () => {
       case 'code':
         return wrapper('👨‍💻', 'Code', 'You are an expert software engineer. Write clean, efficient, and well-commented code to solve the following problem:', 'gpt-4o', 'due to its advanced coding abilities, multilingual language support, and detailed comment generation that enhances code readability and utility.');
       default:
-        return wrapper('🧠', 'Default (fallback)', 'You are a helpful assistant. Respond helpfully and concisely to the following input.', 'gpt-4o', 'due to its general-purpose excellence across diverse tasks and its ability to handle ambiguous input with advanced reasoning.');
+        return wrapper('🧠', 'Enhanced', '[The additonal prompt based off intent] + Ensure your response is over 150 words (different prompt for answers which should be short), includes many keywords from the input, is written with high clarity using short, readable sentences, uses step-by-step reasoning when appropriate, and closely matches the intended meaning to maximize semantic similarity.', 'gpt-4o', 'due to its general-purpose excellence across diverse tasks and its ability to handle ambiguous input with advanced reasoning.');
     }
   };
   
