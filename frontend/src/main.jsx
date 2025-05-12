@@ -1,5 +1,5 @@
 /*
-   This is the entry point of the GenieAI application.
+   This is the entry point of the PromptLink application.
    It initializes the React application, wraps it in the ContextProvider for state management, 
    and mounts it to the `#root` DOM element.
 */
