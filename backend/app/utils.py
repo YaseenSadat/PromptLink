@@ -354,7 +354,7 @@ async def score_response(prompt: str, response: str, intent: str) -> int:
 # 5. Appends it to the cache and returns.
 # ------------------------------------------------------------------------------
 
-async def enhance_prompt(prompt: str):
+async def enhance_prompt(prompt: str, email: str | None = None):
     # Step 1: Detect the intent for routing and scoring
     intent = detect_intent(prompt)
 
