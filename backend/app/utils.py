@@ -412,8 +412,9 @@ async def enhance_prompt(prompt: str, email: str | None = None):
 # ------------------------------------------------------------------------------
 # log_to_neo4j(prompt, intent, response, score, cot_score, model, email=None)
 #
-# Writes the interaction metadata into a Neo4j database for logging, analytics,
-# and history tracking. Includes timestamps and optional email.
+# Writes the interaction metadata into a Neo4j database for logging, analysis,
+# and graph visualization. It creates nodes for User, Prompt, Intent, Response,
+# and Model, and links them with meaningful relationships.
 # ------------------------------------------------------------------------------
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
@@ -422,16 +423,26 @@ def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_scor
     with driver.session() as session:
         session.run(
             """
-            CREATE (i:Interaction {
-                prompt: $prompt,
-                intent: $intent,
-                response: $response,
+            MERGE (p:Prompt {text: $prompt})
+            MERGE (i:Intent {type: $intent})
+            CREATE (r:Response {
+                text: $response,
                 score: $score,
                 cot_score: $cot_score,
-                model: $model,
-                email: $email,
                 timestamp: datetime()
             })
+            MERGE (m:Model {name: $model})
+            
+            // Optional user node if email is provided
+            FOREACH (_ IN CASE WHEN $email IS NOT NULL THEN [1] ELSE [] END |
+                MERGE (u:User {email: $email})
+                MERGE (u)-[:ASKED]->(p)
+            )
+            
+            MERGE (p)-[:HAS_INTENT]->(i)
+            MERGE (p)-[:GOT_RESPONSE]->(r)
+            MERGE (i)-[:TRIGGERED]->(r)
+            MERGE (m)-[:GENERATED]->(r)
             """,
             prompt=prompt,
             intent=intent,
