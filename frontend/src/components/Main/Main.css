@@ -339,3 +339,29 @@
     color: #e0e0e0;
     font-size: 0.95rem;
   }
+
+  .popover-content {
+    position: fixed !important;
+    top: 50vh !important;
+    left: 50vw !important;
+    transform: translate(-50%, -50%) !important;
+  
+    background-color: white;
+    color: black;
+    padding: 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+    font-size: 14px;
+    min-width: 500px;
+    max-width: 280px;
+    text-align: left;
+    z-index: 9999 !important;
+    border: 2px solid #3b82f6;
+    pointer-events: auto;
+  }
+  
+  
+  .popover-arrow {
+    fill: white;
+  }
+  

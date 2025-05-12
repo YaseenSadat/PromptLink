@@ -3,7 +3,7 @@ import './Main.css';
 import { assets } from '../../assets/assets';
 import { Context } from '../../context/context';
 import { getAuth, signOut } from 'firebase/auth';
-
+import * as Popover from '@radix-ui/react-popover';
 
 const Main = () => {
   const {
@@ -16,32 +16,100 @@ const Main = () => {
   } = useContext(Context);
 
   const searchBoxRef = useRef(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+  const [showGlobalPopover, setShowGlobalPopover] = useState(false);
+  const [hoveredChatIndex, setHoveredChatIndex] = useState(null);
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && input.trim()) { // Only trigger if input is not empty
-      onSent(); // Call the onSent function
+    if (e.key === 'Enter' && input.trim()) {
+      onSent();
     }
   };
 
   const handleCardClick = (prompt) => {
     setInput(prompt);
   };
-  
-  
 
-  // Auto-scroll to the search box whenever chats or loading state changes
+  const getIntentExplanation = (intent) => {
+    const wrapper = (emoji, title, systemPrompt, model, reason) => (
+      <>
+        <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+          <p style={{ margin: 0 }}>{emoji} <strong>{title}</strong></p>
+          <hr style={{ marginTop: '0.5rem', width: '98%', border: '1px solid #e0e0e0' }} />
+        </div>
+        <p>After analyzing your input using LangChain’s intent classification system, we identified your intent as <strong>"{title.toLowerCase()}"</strong></p>
+        <div style={{ marginBottom: '1rem' }}></div>
+        <p style={{ marginBottom: '0.5rem' }}>To help the model generate a structured, in-depth response, we prefaced your prompt with:</p>
+        <p style={{ marginBottom: '1rem' }}><em><strong>"{systemPrompt}"</strong></em></p>
+        <p>The model we feel that will be best suited to give you the most effective and efficient response is <strong>"{model}"</strong> {reason}</p>
+      </>
+    );
+  
+    switch (intent?.toLowerCase()) {
+      case 'analyze':
+        return wrapper('🔍', 'Analyze', 'You are a critical analyst. Provide a detailed analysis of the following topic, identifying causes, effects, and implications.', 'gemini-2.0-flash', 'due to its high-speed reasoning capabilities and strong performance in analytical breakdowns.');
+      case 'compare':
+        return wrapper('⚖️', 'Compare', 'You are a helpful assistant. Provide a clear side-by-side comparison of the following options.', 'gemini-2.0-flash', 'due to its ability to present structured, clear comparisons with speed and accuracy.');
+      case 'review':
+        return wrapper('🧐', 'Review', 'You are a critical reviewer. Offer a balanced and insightful critique of the following.', 'gemini-2.0-flash', 'due to its nuanced evaluative abilities and efficiency in delivering thoughtful feedback.');
+      case 'expand':
+        return wrapper('📚', 'Expand', 'You are a thoughtful writer. Expand on the following idea with additional details, examples, or explanations.', 'gemini-2.0-flash', 'due to its strength in elaborating on ideas with depth and clarity while remaining fast and cost-effective.');
+      case 'summarize':
+        return wrapper('✍️', 'Summarize', 'You are a professional summarizer. Create a concise and accurate summary of the following content in bullet points or a paragraph.', 'gpt-3.5-turbo', 'due to its speed, reliability, and ability to distill information effectively without the resource demands of more complex models.');
+      case 'generate':
+        return wrapper('💡', 'Generate', 'You are a creative content generator. Use an engaging and original tone to generate content based on this prompt.', 'gpt-3.5-turbo', 'due to its fast generation times and strong creative capabilities for general-purpose content.');
+      case 'advise':
+        return wrapper('🤝', 'Advise', 'You are a helpful and thoughtful advisor. Offer practical, clear, and empathetic advice for the following question or situation.', 'gpt-3.5-turbo', 'due to its conversational tone and balanced guidance tailored to user needs.');
+      case 'edit':
+        return wrapper('📝', 'Edit', 'You are a professional editor. Improve the grammar, clarity, and tone of the following text without changing its meaning.', 'gpt-3.5-turbo', 'due to its consistency and fluency in grammar correction and stylistic refinement.');
+      case 'translate':
+        return wrapper('🌐', 'Translate', 'You are a fluent translator. Translate the following text to fluent English while keeping original tone and context.', 'gpt-3.5-turbo', 'due to its multilingual capabilities and fast processing of basic translation tasks.');
+      case 'rephrase':
+        return wrapper('🔁', 'Rephrase', 'You are a skilled rewriter. Paraphrase the following content in a new tone or style while preserving the original meaning.', 'gpt-3.5-turbo', 'due to its proficiency in rewording while keeping context and clarity intact.');
+      case 'outline':
+        return wrapper('🔧', 'Outline', 'You are a structured thinker. Convert the following ideas into a clear, organized outline.', 'gpt-3.5-turbo', 'due to its logical structure and concise formatting skills.');
+      case 'explain':
+        return wrapper('📖', 'Explain', 'You are a skilled technical educator. Break down the following concept clearly and simply for a beginner audience.', 'gpt-3.5-turbo', 'due to its strength in simplifying complex ideas for a general audience.');
+      case 'reason':
+        return wrapper('🧮', 'Reason', 'You are a logical AI designed for step-by-step reasoning. Solve or evaluate the following situation by explaining each step clearly.', 'gpt-3.5-turbo', 'due to its reliability in handling logical sequences without unnecessary complexity.');
+      case 'code':
+        return wrapper('👨‍💻', 'Code', 'You are an expert software engineer. Write clean, efficient, and well-commented code to solve the following problem:', 'gpt-4o', 'due to its advanced coding abilities, multilingual language support, and detailed comment generation that enhances code readability and utility.');
+      default:
+        return wrapper('🧠', 'Default (fallback)', 'You are a helpful assistant. Respond helpfully and concisely to the following input.', 'gpt-4o', 'due to its general-purpose excellence across diverse tasks and its ability to handle ambiguous input with advanced reasoning.');
+    }
+  };
+  
+  
+  
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchBoxRef.current) {
         searchBoxRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }
-    }, 500); // Adjust the delay time here (500ms in this case)
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [chats, loading, input]);
 
-    return () => clearTimeout(timer); // Cleanup timer on component unmount
-  }, [chats, loading, input]); // Dependencies for scrolling
+  useEffect(() => {
+    const icons = document.querySelectorAll('.icon-bottom-right img');
+    icons.forEach((icon, index) => {
+      icon.addEventListener('mouseenter', () => {
+        setHoveredChatIndex(index);
+        setShowGlobalPopover(true);
+      });
+      icon.addEventListener('mouseleave', () => {
+        setHoveredChatIndex(null);
+        setShowGlobalPopover(false);
+      });
+    });
 
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
+    return () => {
+      icons.forEach((icon) => {
+        icon.replaceWith(icon.cloneNode(true)); // remove old listeners
+      });
+    };
+  }, [chats]);
 
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
@@ -58,7 +126,7 @@ const Main = () => {
 
   const handleLogout = async () => {
     const auth = getAuth();
-    await signOut(auth); // Sign out using Firebase
+    await signOut(auth);
   };
 
   return (
@@ -79,6 +147,7 @@ const Main = () => {
           )}
         </div>
       </div>
+
       <div className="main-container">
         {chats.length === 0 ? (
           <>
@@ -108,9 +177,7 @@ const Main = () => {
               <div className="loading-initial">
                 <div className="result-data">
                   <img src={assets.logo} alt="Gemini Icon" />
-                  <div className="loader">
-                    <hr /><hr /><hr />
-                  </div>
+                  <div className="loader"><hr /><hr /><hr /></div>
                 </div>
               </div>
             )}
@@ -125,24 +192,49 @@ const Main = () => {
                 </div>
                 <div className="result-data">
                   <img src={assets.logo} alt="Gemini Icon" />
-                  <div className="response-content" dangerouslySetInnerHTML={{ __html: chat.response }} />
+                  <div
+                    className="response-content"
+                    dangerouslySetInnerHTML={{ __html: chat.response }}
+                  />
                 </div>
               </div>
             ))}
 
-            {/* Separate loading indicator that appears after all existing messages */}
+            {/* Floating Popover that shows on icon hover */}
+            <Popover.Root open={showGlobalPopover}>
+            <Popover.Trigger asChild>
+              <button style={{ display: 'none' }} aria-hidden="true" />
+            </Popover.Trigger>
+
+
+              <Popover.Portal>
+                <Popover.Content
+                  className="popover-content"
+                  onPointerEnter={() => setShowGlobalPopover(true)}
+                  onPointerLeave={() => setShowGlobalPopover(false)}
+                >
+                  {hoveredChatIndex !== null && chats[hoveredChatIndex] && (
+  <>
+    {getIntentExplanation(chats[hoveredChatIndex].intent)}
+    <Popover.Arrow className="popover-arrow" />
+  </>
+)}
+
+                </Popover.Content>
+              </Popover.Portal>
+            </Popover.Root>
+
             {loading && (
               <div className="result">
                 <div className="result-data">
                   <img src={assets.logo} alt="Gemini Icon" />
-                  <div className="loader">
-                    <hr /><hr /><hr />
-                  </div>
+                  <div className="loader"><hr /><hr /><hr /></div>
                 </div>
               </div>
             )}
           </div>
         )}
+
         <div className="main-bottom">
           <div className="search-box" ref={searchBoxRef}>
             <input
@@ -153,9 +245,7 @@ const Main = () => {
               onKeyDown={handleKeyPress}
             />
             <div>
-              {input ? (
-                <img onClick={() => onSent()} src={assets.send_icon} alt="Send Icon" />
-              ) : null}
+              {input && <img onClick={() => onSent()} src={assets.send_icon} alt="Send Icon" />}
             </div>
           </div>
 
@@ -164,11 +254,9 @@ const Main = () => {
           </p>
         </div>
 
-        {/* Enhance button placed separately so it's anchored bottom-right */}
         <button className="enhance-btn" onClick={onEnhance}>
-        Enhance Response?
-      </button>
-
+          Enhance Response?
+        </button>
       </div>
     </div>
   );

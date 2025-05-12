@@ -40,6 +40,7 @@
 }
 
 .meta-box {
+  position: relative; /* ADD THIS */
   background-color: #2d3748;
   color: #cbd5e0;
   margin-top: 2em;
@@ -48,7 +49,6 @@
   border-radius: 8px;
   font-size: 14px;
 }
-
 
 
 .app-container {
@@ -73,4 +73,23 @@
   height: 100vh;
   overflow-y: auto;
   background-color: #0c1c23;
+}
+
+.icon-bottom-right {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+}
+
+.icon-bottom-right img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.icon-bottom-right img:hover {
+  opacity: 1;
+  transform: scale(1.2);
 }

@@ -321,6 +321,5 @@ def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_scor
         cot_score=cot_score,
         model=model,
         timestamp=datetime.now(timezone.utc).isoformat()
-
     )
 
