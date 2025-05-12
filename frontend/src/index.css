@@ -30,3 +30,66 @@
     opacity: 1;
   }
 }
+
+.code-block {
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 1em 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.meta-box {
+  position: relative; /* ADD THIS */
+  background-color: #2d3748;
+  color: #cbd5e0;
+  margin-top: 2em;
+  padding: 1em;
+  border-left: 4px solid #3b82f6;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+
+.app-container {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.sidebar-wrapper {
+  /* width: 80px; */
+  height: 100vh;
+  background-color: black;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+  flex-shrink: 0;
+}
+
+.main-wrapper {
+  flex: 1;
+  height: 100vh;
+  overflow-y: auto;
+  background-color: #0c1c23;
+}
+
+.icon-bottom-right {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+}
+
+.icon-bottom-right img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.7;
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.icon-bottom-right img:hover {
+  opacity: 1;
+  transform: scale(1.2);
+}

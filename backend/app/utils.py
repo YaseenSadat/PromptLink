@@ -117,17 +117,19 @@ def detect_intent(prompt: str) -> str:
 
 # ======================== Main Router ========================
 
-async def route_prompt(prompt: str):
+async def route_prompt(prompt: str, email: str | None = None):
     intent = detect_intent(prompt)
     template = prompt_templates[intent]
     incoming_vec = embedding_model.embed_query(prompt)
 
     # Check cache
-    for cached_vec, cached_intent, cached_response in CACHE:
+    for cached_vec, cached_intent, cached_response, cached_model in CACHE:
         cosine_sim = np.dot(incoming_vec, cached_vec) / (np.linalg.norm(incoming_vec) * np.linalg.norm(cached_vec))
         if cosine_sim > SIMILARITY_THRESHOLD and cached_intent == intent:
             print("[CACHE HIT] Reusing previous response")
-            return intent, cached_response, 100
+            return intent, cached_response, 100, cached_model, True
+
+
 
     # Select model based on intent
     if intent in {"analyze", "compare", "review", "expand"}:
@@ -147,64 +149,61 @@ async def route_prompt(prompt: str):
     score = await score_response(prompt, response.content, intent)
     cot_score = await validate_chain_of_thought(response.content)
 
-    log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used)
+    log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used, email)
 
     print(f"[DEBUG] CoT Score: {cot_score * 2}/20")
-    CACHE.append((incoming_vec, intent, response.content))
-    return intent, response.content, score
+    CACHE.append((incoming_vec, intent, response.content, model_used))
+    return intent, response.content, score, model_used, False
 
 # ======================== Scoring and Evaluation ========================
 
-async def score_response(prompt: str, response: str, intent: str) -> int:
-    score = 0
-    score += score_length(response, intent)
+# ---- Modular scoring functions ----
 
+def score_overlap(prompt: str, response: str) -> int:
     prompt_words = set(re.findall(r'\w+', prompt.lower()))
     response_words = set(re.findall(r'\w+', response.lower()))
     overlap = prompt_words & response_words
     overlap_ratio = len(overlap) / max(len(prompt_words), 1)
 
     if overlap_ratio > 0.5:
-        score += 20
+        return 20
     elif overlap_ratio > 0.3:
-        score += 15
+        return 15
     elif overlap_ratio > 0.2:
-        score += 10
+        return 10
     elif overlap_ratio > 0.1:
-        score += 5
+        return 5
+    return 0
 
+def score_cosine_similarity(prompt: str, response: str) -> int:
     try:
         vec_prompt = embedding_model.embed_query(prompt)
         vec_response = embedding_model.embed_query(response)
         cosine_sim = np.dot(vec_prompt, vec_response) / (np.linalg.norm(vec_prompt) * np.linalg.norm(vec_response))
         if cosine_sim > 0.95:
-            score += 20
+            return 20
         elif cosine_sim > 0.9:
-            score += 15
+            return 15
         elif cosine_sim > 0.85:
-            score += 10
+            return 10
         elif cosine_sim > 0.8:
-            score += 5
+            return 5
     except Exception:
         pass
+    return 0
 
-    avg_sentence_length = sum(len(s.split()) for s in re.split(r'[.!?]', response) if s.strip()) / max(1, len(re.findall(r'[.!?]', response)))
-    if avg_sentence_length < 20:
-        score += 20
-    elif avg_sentence_length < 25:
-        score += 15
-    elif avg_sentence_length < 30:
-        score += 10
-    elif avg_sentence_length < 35:
-        score += 5
-
-    cot_raw = await validate_chain_of_thought(response)
-    score += cot_raw * 2
-
-    if intent == "translate":
-        return 100
-
-    return int(round(score / 10.0) * 10)
+def score_avg_sentence_length(response: str) -> int:
+    sentences = re.split(r'[.!?]', response)
+    avg_len = sum(len(s.split()) for s in sentences if s.strip()) / max(1, len(re.findall(r'[.!?]', response)))
+    if avg_len < 20:
+        return 20
+    elif avg_len < 25:
+        return 15
+    elif avg_len < 30:
+        return 10
+    elif avg_len < 35:
+        return 5
+    return 0
 
 def score_length(response: str, intent: str) -> int:
     word_count = len(response.split())
@@ -239,9 +238,28 @@ Respond with a number from 0 to 10 only, no explanation."""
         print("[ERROR] Failed to extract CoT score:", str(e))
         return 0
 
+# ---- Main scoring function ----
+
+async def score_response(prompt: str, response: str, intent: str) -> int:
+    if intent == "translate":
+        return 100
+
+    score = 0
+    score += score_length(response, intent)
+    score += score_overlap(prompt, response)
+    score += score_cosine_similarity(prompt, response)
+    score += score_avg_sentence_length(response)
+    score += await validate_chain_of_thought(response) * 2
+
+    return int(round(score / 10.0) * 10)
+
 # ======================== Fallback Handler ========================
 
-def override_with_4o(prompt: str, intent: str):
+async def enhance_prompt(prompt: str):
+    intent = detect_intent(prompt)
+    incoming_vec = embedding_model.embed_query(prompt)
+
+    # Custom instruction based on intent
     if intent == "summarize":
         custom_instruction = (
             "Ensure your summary is under 40 words, includes key terms from the input, "
@@ -254,45 +272,53 @@ def override_with_4o(prompt: str, intent: str):
             "is written with high clarity using short, readable sentences, uses step-by-step reasoning "
             "when appropriate, and closely matches the intended meaning to maximize semantic similarity.\n\n"
         )
+
     modified_prompt = custom_instruction + prompt
-    print(f"[DEBUG] Forcing GPT-4o rerun with semantic similarity optimization (intent={intent})")
+    template = prompt_templates.get(intent, prompt_templates["default"])
+    chain = template | llm_4o
+    model_used = "gpt-4o"
+
     try:
-        chain = prompt_templates.get(intent, prompt_templates["default"]) | llm_4o
-        response = chain.invoke({"input": modified_prompt})
-        return response.content
+        print(f"[DEBUG] Enhancing response with GPT-4o override (intent={intent})")
+        response = await chain.ainvoke({"input": modified_prompt})
+        score = await score_response(prompt, response.content, intent)
+        cot_score = await validate_chain_of_thought(response.content)
+
+        log_to_neo4j(prompt, intent, response.content, score, cot_score, model_used, email)
+        CACHE.append((incoming_vec, intent, response.content, model_used))
+
+        return intent, response.content, score, model_used
     except Exception as e:
-        print("[ERROR] Failed during GPT-4o override:", e)
-        return "[ERROR] Failed to generate response using override_with_4o"
+        print("[ERROR] Failed in enhance_prompt:", e)
+        return intent, "[ERROR] GPT-4o override failed.", 0, model_used
+
 
 # ======================== Neo4j Logging ========================
 
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
-def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float, model: str):
+def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float, model: str, email=None):
     with driver.session() as session:
         session.run(
-        """
-        MERGE (p:Prompt {text: $prompt})
-        MERGE (i:Intent {type: $intent})
-        CREATE (r:Response {
-            text: $response,
-            score: $score,
-            cot_score: $cot_score,
-            model: $model,
-            timestamp: datetime($timestamp)
-        })
-        MERGE (p)-[:HAS_INTENT]->(i)
-        MERGE (p)-[:GOT_RESPONSE]->(r)
-        MERGE (i)-[:TRIGGERED]->(r)
-        """,
-        prompt=prompt,
-        intent=intent,
-        response=response,
-        score=score,
-        cot_score=cot_score,
-        model=model,
-        timestamp=datetime.now(timezone.utc).isoformat()
+    """
+    CREATE (i:Interaction {
+        prompt: $prompt,
+        intent: $intent,
+        response: $response,
+        score: $score,
+        cot_score: $cot_score,
+        model: $model,
+        email: $email,
+        timestamp: datetime()
+    })
+    """,
+    prompt=prompt,
+    intent=intent,
+    response=response,
+    score=score,
+    cot_score=cot_score,
+    model=model,
+    email=email,
+)
 
-
-    )
 
