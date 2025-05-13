@@ -1,11 +1,28 @@
+// ============================================================
+// Sidebar.jsx — Collapsible navigation panel for chat history
+//
+// This component renders the sidebar UI, including the menu
+// toggle, new chat button, and a scrollable list of previous
+// prompt sessions. Allows quick prompt re-submission.
+//
+// Key functionalities:
+// 1. Toggle extended sidebar view
+// 2. Start a new chat session
+// 3. Display and reload recent prompt sessions
+// ============================================================
+
 import React, { useState, useContext } from 'react';
 import { View, Text, TouchableOpacity, Image, StyleSheet, ScrollView } from 'react-native';
 import { assets } from '../../assets/assets';
 import { Context } from '../../context/context';
 
 const Sidebar = () => {
-  const [extended, setExtended] = useState(false);
-  const { onSent, chatSessions, setInput, newChat } = useContext(Context);
+  const [extended, setExtended] = useState(false);                            // Controls sidebar expansion
+  const { onSent, chatSessions, setInput, newChat } = useContext(Context);   // Access shared context
+
+  // ============================================================
+  // Load a past prompt into the input and resend it
+  // ============================================================
 
   const loadPrompt = async (prompt) => {
     setInput(prompt);
@@ -15,18 +32,18 @@ const Sidebar = () => {
   return (
     <View style={styles.sidebar}>
       <View>
-        {/* Menu Icon */}
+        {/* Toggle Sidebar Expansion */}
         <TouchableOpacity onPress={() => setExtended((prev) => !prev)} style={styles.menuIcon}>
           <Image source={assets.menu_icon} style={styles.icon} />
         </TouchableOpacity>
 
-        {/* New Chat Button */}
+        {/* Start New Chat */}
         <TouchableOpacity onPress={newChat} style={styles.newChat}>
           <Image source={assets.plus_icon} style={styles.icon} />
           {extended && <Text style={styles.text}>New Chat</Text>}
         </TouchableOpacity>
 
-        {/* Chat Sessions */}
+        {/* Show Previous Chat Sessions */}
         {extended && (
           <ScrollView style={styles.recent}>
             <Text style={styles.recentTitle}>Recent</Text>
@@ -34,7 +51,7 @@ const Sidebar = () => {
               <View key={i}>
                 {session.length > 0 && (
                   <>
-                    {/* Folder title with message icon */}
+                    {/* First prompt of session as folder title */}
                     <TouchableOpacity
                       onPress={() => loadPrompt(session[0])}
                       style={styles.recentEntry}
@@ -43,7 +60,7 @@ const Sidebar = () => {
                       <Text style={styles.text}>{session[0].slice(0, 18)}...</Text>
                     </TouchableOpacity>
 
-                    {/* Nested prompts without icon */}
+                    {/* Remaining prompts in session (indented) */}
                     {session.slice(1).map((prompt, j) => (
                       <TouchableOpacity
                         key={j}
@@ -63,6 +80,10 @@ const Sidebar = () => {
     </View>
   );
 };
+
+// ============================================================
+// Stylesheet for Sidebar component (React Native)
+// ============================================================
 
 const styles = StyleSheet.create({
   sidebar: {

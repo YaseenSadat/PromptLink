@@ -1,22 +1,43 @@
+// ============================================================
+// context.jsx — React context provider for prompt-based chat UI
+//
+// This file sets up a React Context that maintains the global
+// state for chat inputs, loading status, session history, and
+// backend communication for prompts and enhancements.
+//
+// Key responsibilities:
+// 1. Manages current user input and chat history
+// 2. Handles sending prompts to backend (/prompt)
+// 3. Handles enhancing prompts via backend (/enhance)
+// 4. Stores session-level metadata like last prompt/score
+// ============================================================
+
 import React, { createContext, useState } from "react";
 import { marked } from 'marked';
 import { assets } from '../assets/assets';
 import { getAuth } from 'firebase/auth';
 
-
 export const Context = createContext();
 
 const ContextProvider = ({ children }) => {
-  const [input, setInput] = useState("");
-  const [prevPrompts, setPrevPrompts] = useState([]);
-  const [chatSessions, setChatSessions] = useState([[]]);
-  const [loading, setLoading] = useState(false);
-  const [chats, setChats] = useState([]);
-  const [lastPrompt, setLastPrompt] = useState("");
-  const [lastScore, setLastScore] = useState(null);
-  const auth = getAuth();
-  const user = auth.currentUser;
-  const email = user?.email;
+  // ================================
+  // State variables
+  // ================================
+
+  const [input, setInput] = useState("");                     // current input text
+  const [prevPrompts, setPrevPrompts] = useState([]);         // history of prompts sent
+  const [chatSessions, setChatSessions] = useState([[]]);     // session-wise prompt tracking
+  const [loading, setLoading] = useState(false);              // UI loading indicator
+  const [chats, setChats] = useState([]);                     // full list of chat messages
+  const [lastPrompt, setLastPrompt] = useState("");           // most recent prompt
+  const [lastScore, setLastScore] = useState(null);           // score returned by backend
+  const auth = getAuth();                                     // Firebase auth instance
+  const user = auth.currentUser;                              // current user
+  const email = user?.email;                                  // user email (optional)
+
+  // ================================
+  // Create a new chat session
+  // ================================
 
   const newChat = () => {
     setLoading(false);
@@ -24,10 +45,17 @@ const ContextProvider = ({ children }) => {
     setChatSessions((prev) => [...prev, []]);
   };
 
+  // ================================
+  // Send prompt to backend (/prompt)
+  // Handles classification, markdown parsing, score display
+  // ================================
+
   const onSent = async (prompt) => {
     setLoading(true);
 
     const userPrompt = prompt || input;
+
+    // Store prompt if not explicitly passed
     if (!prompt) {
       setChatSessions((prev) => {
         const updated = [...prev];
@@ -52,6 +80,10 @@ const ContextProvider = ({ children }) => {
       setLastPrompt(userPrompt);
       setLastScore(score);
 
+      // ================================
+      // Convert markdown to HTML with styling
+      // ================================
+
       const markdownSections = aiResponse.split(/```/);
       let finalHtml = "";
 
@@ -69,6 +101,7 @@ const ContextProvider = ({ children }) => {
         ? `<p><strong>✅ Used context-aware caching!</strong></p>`
         : "";
 
+      // Append metadata section
       finalHtml += `
         <div class="meta-box">
           <p><strong>Score:</strong> ${score}</p>
@@ -81,6 +114,7 @@ const ContextProvider = ({ children }) => {
         </div>
       `;
 
+      // Store in chat history
       setChats((prev) => [...prev, {
         prompt: userPrompt,
         response: finalHtml,
@@ -88,6 +122,7 @@ const ContextProvider = ({ children }) => {
         model: temp_model
       }]);
 
+      // Scroll animation + syntax highlight
       setTimeout(() => {
         if (window.Prism) window.Prism.highlightAll();
         const lastChat = document.querySelector(".result:last-child");
@@ -108,6 +143,11 @@ const ContextProvider = ({ children }) => {
     setLoading(false);
   };
 
+  // ================================
+  // Enhance prompt via backend (/enhance)
+  // Called only if lastScore is < 80
+  // ================================
+
   const onEnhance = async () => {
     if (!lastPrompt || lastScore >= 80) return;
     setLoading(true);
@@ -123,6 +163,7 @@ const ContextProvider = ({ children }) => {
       const data = await response.json();
       const { response: aiResponse, score, model } = data;
 
+      // Format enhanced response as HTML
       const markdownSections = aiResponse.split(/```/);
       let finalHtml = "";
 
@@ -174,6 +215,10 @@ const ContextProvider = ({ children }) => {
     setInput("");
     setLoading(false);
   };
+
+  // ================================
+  // Expose context values to children
+  // ================================
 
   return (
     <Context.Provider
