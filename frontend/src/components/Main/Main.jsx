@@ -1,3 +1,19 @@
+// ============================================================
+// Main.jsx — Central workspace for chat interface
+//
+// Handles the main layout and logic for the chat UI,
+// including prompt submission, displaying responses,
+// session history, popovers for intent explanation,
+// and model-enhanced interaction features.
+//
+// Key responsibilities:
+// 1. Input handling and prompt dispatching
+// 2. Displaying chat results and loading states
+// 3. Interactive prompt suggestions (cards)
+// 4. Popover with explanation for AI intent
+// 5. Session logout and user dropdown
+// ============================================================
+
 import React, { useContext, useEffect, useState, useRef } from 'react';
 import './Main.css';
 import { assets } from '../../assets/assets';
@@ -21,16 +37,25 @@ const Main = () => {
   const [showGlobalPopover, setShowGlobalPopover] = useState(false);
   const [hoveredChatIndex, setHoveredChatIndex] = useState(null);
 
+  // =========================
+  // Handle key press (Enter) to submit input
+  // =========================
   const handleKeyPress = (e) => {
     if (e.key === 'Enter' && input.trim()) {
       onSent();
     }
   };
 
+  // =========================
+  // Handle preset card clicks
+  // =========================
   const handleCardClick = (prompt) => {
     setInput(prompt);
   };
 
+  // =========================
+  // Provide explanation for intent classification
+  // =========================
   const getIntentExplanation = (intent) => {
     const wrapper = (emoji, title, systemPrompt, model, reason) => (
       <>
@@ -79,9 +104,10 @@ const Main = () => {
         return wrapper('🧠', 'Enhanced', '[The additonal prompt based off intent] + Ensure your response is over 150 words (different prompt for answers which should be short), includes many keywords from the input, is written with high clarity using short, readable sentences, uses step-by-step reasoning when appropriate, and closely matches the intended meaning to maximize semantic similarity.', 'gpt-4o', 'due to its general-purpose excellence across diverse tasks and its ability to handle ambiguous input with advanced reasoning.');
     }
   };
-  
-  
-  
+
+  // =========================
+  // Scroll to input after chat updates
+  // =========================
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchBoxRef.current) {
@@ -91,6 +117,9 @@ const Main = () => {
     return () => clearTimeout(timer);
   }, [chats, loading, input]);
 
+  // =========================
+  // Add hover listeners for chat icon popovers
+  // =========================
   useEffect(() => {
     const icons = document.querySelectorAll('.icon-bottom-right img');
     icons.forEach((icon, index) => {
@@ -106,11 +135,14 @@ const Main = () => {
 
     return () => {
       icons.forEach((icon) => {
-        icon.replaceWith(icon.cloneNode(true)); // remove old listeners
+        icon.replaceWith(icon.cloneNode(true)); // removes old listeners
       });
     };
   }, [chats]);
 
+  // =========================
+  // Dropdown logic
+  // =========================
   const toggleDropdown = () => setDropdownOpen(!dropdownOpen);
 
   const handleClickOutside = (e) => {
@@ -124,13 +156,20 @@ const Main = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // =========================
+  // Firebase logout
+  // =========================
   const handleLogout = async () => {
     const auth = getAuth();
     await signOut(auth);
   };
 
+  // =========================
+  // Main JSX structure
+  // =========================
   return (
     <div className="main">
+      {/* Navbar */}
       <div className="nav">
         <p>PromptLink</p>
         <div className="dropdown-wrapper" ref={dropdownRef}>
@@ -148,13 +187,17 @@ const Main = () => {
         </div>
       </div>
 
+      {/* Main Container */}
       <div className="main-container">
+        {/* No chat yet — show suggestions */}
         {chats.length === 0 ? (
           <>
             <div className="greet">
               <p><span>Start typing. I’ll take it from here!</span></p>
               <p>Your intent. The right model. The perfect response.</p>
             </div>
+
+            {/* Prompt cards */}
             <div className="cards">
               <div className="card" onClick={() => handleCardClick('Suggest beautiful places to see on an upcoming road trip')}>
                 <p>Suggest beautiful places to see on an upcoming road trip</p>
@@ -173,6 +216,8 @@ const Main = () => {
                 <img src={assets.code_icon} alt="Code Icon" />
               </div>
             </div>
+
+            {/* Initial loading animation */}
             {loading && (
               <div className="loading-initial">
                 <div className="result-data">
@@ -183,6 +228,7 @@ const Main = () => {
             )}
           </>
         ) : (
+          // Chat History Display
           <div className="chat-history">
             {chats.map((chat, index) => (
               <div key={index} className="result">
@@ -200,12 +246,11 @@ const Main = () => {
               </div>
             ))}
 
-            {/* Floating Popover that shows on icon hover */}
+            {/* Floating Intent Popover */}
             <Popover.Root open={showGlobalPopover}>
-            <Popover.Trigger asChild>
-              <button style={{ display: 'none' }} aria-hidden="true" />
-            </Popover.Trigger>
-
+              <Popover.Trigger asChild>
+                <button style={{ display: 'none' }} aria-hidden="true" />
+              </Popover.Trigger>
 
               <Popover.Portal>
                 <Popover.Content
@@ -214,16 +259,16 @@ const Main = () => {
                   onPointerLeave={() => setShowGlobalPopover(false)}
                 >
                   {hoveredChatIndex !== null && chats[hoveredChatIndex] && (
-  <>
-    {getIntentExplanation(chats[hoveredChatIndex].intent)}
-    <Popover.Arrow className="popover-arrow" />
-  </>
-)}
-
+                    <>
+                      {getIntentExplanation(chats[hoveredChatIndex].intent)}
+                      <Popover.Arrow className="popover-arrow" />
+                    </>
+                  )}
                 </Popover.Content>
               </Popover.Portal>
             </Popover.Root>
 
+            {/* Loading bubble */}
             {loading && (
               <div className="result">
                 <div className="result-data">
@@ -235,6 +280,7 @@ const Main = () => {
           </div>
         )}
 
+        {/* Chat Input + Footer Info */}
         <div className="main-bottom">
           <div className="search-box" ref={searchBoxRef}>
             <input
@@ -254,6 +300,7 @@ const Main = () => {
           </p>
         </div>
 
+        {/* Enhance Button */}
         <button className="enhance-btn" onClick={onEnhance}>
           Enhance Response?
         </button>
