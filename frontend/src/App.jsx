@@ -1,8 +1,12 @@
 /*
-   This file serves as the main application layout. 
+   App.jsx: This file serves as the main application layout. 
    It combines the `Sidebar` and `Main` components to form the primary user interface.
+   It also handles Firebase authentication and routing to the Loading screen.
 */
 
+// ============================================================
+// Imports
+// ============================================================
 
 import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
@@ -12,8 +16,18 @@ import 'prismjs';
 import 'prismjs/themes/prism-tomorrow.css'; // Or any other Prism theme
 import { toast } from 'react-toastify';
 
-import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import {
+  getAuth,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword
+} from 'firebase/auth';
 import { initializeApp } from 'firebase/app';
+
+// ============================================================
+// Firebase Configuration
+// Reads environment variables for sensitive config values
+// ============================================================
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -25,21 +39,40 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 }; 
 
+// Initialize Firebase
 initializeApp(firebaseConfig);
 const auth = getAuth();
 
+// ============================================================
+// Main App Component
+// Handles Firebase authentication and renders layout
+// ============================================================
+
 const App = () => {
-  const [user, setUser] = useState(null);
-  const [authMode, setAuthMode] = useState('login');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  // ==========================================================
+  // Local state for user authentication and auth form fields
+  // ==========================================================
+
+  const [user, setUser] = useState(null);               // current authenticated user
+  const [authMode, setAuthMode] = useState('login');    // 'login' or 'signup'
+  const [email, setEmail] = useState('');               // user email input
+  const [password, setPassword] = useState('');         // user password input
+
+  // ==========================================================
+  // Subscribe to Firebase auth state changes
+  // ==========================================================
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
-    return () => unsubscribe();
+    return () => unsubscribe(); // cleanup on unmount
   }, []);
+
+  // ==========================================================
+  // Handle login or signup based on current authMode
+  // Shows toast notifications on error
+  // ==========================================================
 
   const handleAuth = async () => {
     try {
@@ -62,7 +95,10 @@ const App = () => {
       }
     }
   };
-  
+
+  // ==========================================================
+  // If no authenticated user, show Loading (auth screen)
+  // ==========================================================
 
   if (!user) {
     return (
@@ -78,16 +114,19 @@ const App = () => {
     );
   }
 
+  // ==========================================================
+  // Main application layout with Sidebar and Main components
+  // ==========================================================
+
   return (
     <div className="app-container">
-  <div className="sidebar-wrapper">
-    <Sidebar />
-  </div>
-  <div className="main-wrapper">
-    <Main />
-  </div>
-</div>
-
+      <div className="sidebar-wrapper">
+        <Sidebar />
+      </div>
+      <div className="main-wrapper">
+        <Main />
+      </div>
+    </div>
   );
 };
 
