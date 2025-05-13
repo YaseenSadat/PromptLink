@@ -5,7 +5,7 @@
 **PromptLink** is a full-stack AI prompt-routing system that intelligently detects user intent and dynamically selects the most suitable large language model (LLM) to handle the task. Built with React, FastAPI, LangChain, and Neo4j, the app supports user authentication via Firebase and offers a smooth, chat-like interface that delivers model responses with syntax highlighting, Markdown formatting, and contextual explanations. PromptLink uses an evaluation framework to assess the quality of each response through scoring metrics like similarity and length, enabling automatic enhancements when needed. It also features asynchronous backend handling and context-aware caching to improve performance, reducing latency and boosting efficiency. All interactions are logged in a graph database to visualize reasoning chains and model behavior, helping users trace the AI’s decision-making process.
 
 
-Check out the YouTube Walkthrough: [PromptLink](https://lumenera.onrender.com).
+Check out the YouTube Walkthrough: [PromptLink](https://youtu.be/iLKj3VljcF8).
 
 ---
 
