@@ -19,7 +19,7 @@ and middleware to start the backend server.
 
 from fastapi import FastAPI 
 from fastapi.middleware.cors import CORSMiddleware
-from app.router import router
+from backend.app.router import router
 
 # Instantiate the FastAPI application
 app = FastAPI()
