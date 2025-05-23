@@ -1,0 +1,11 @@
+fastapi 
+uvicorn 
+langchain 
+openai 
+neo4j 
+python-dotenv 
+aiohttp
+langchain-community
+langchain-openai
+langchain-google-genai
+google-genai
