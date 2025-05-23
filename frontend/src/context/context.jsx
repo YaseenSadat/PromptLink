@@ -68,7 +68,7 @@ const ContextProvider = ({ children }) => {
     if (!prompt) setPrevPrompts((prev) => [...prev, userPrompt]);
 
     try {
-      const response = await fetch("http://localhost:8000/prompt", {
+      const response = await fetch("https://promptlink-backend.onrender.com/prompt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: userPrompt, email }),
@@ -154,7 +154,7 @@ const ContextProvider = ({ children }) => {
     const userPrompt = lastPrompt;
 
     try {
-      const response = await fetch("http://localhost:8000/enhance", {
+      const response = await fetch("http://https://promptlink-backend.onrender.com/enhance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: userPrompt, email }),
