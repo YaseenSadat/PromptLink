@@ -35,6 +35,28 @@ const ContextProvider = ({ children }) => {
   const user = auth.currentUser;                              // current user
   const email = user?.email;                                  // user email (optional)
 
+
+  // ==================================
+  // Limit each user to 10 messages/day
+  // ==================================
+
+  const getTodayKey = (email) => {
+    const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+    return `usage-${email}-${today}`;
+  };
+
+  const incrementUsage = (email) => {
+    const key = getTodayKey(email);
+    const count = parseInt(localStorage.getItem(key) || "0", 10);
+    localStorage.setItem(key, count + 1);
+  };
+
+  const getUsageCount = (email) => {
+    const key = getTodayKey(email);
+    return parseInt(localStorage.getItem(key) || "0", 10);
+  };
+
+
   // ================================
   // Create a new chat session
   // ================================
@@ -67,6 +89,12 @@ const ContextProvider = ({ children }) => {
 
     if (!prompt) setPrevPrompts((prev) => [...prev, userPrompt]);
 
+    const usage = getUsageCount(email);
+    if (usage >= 10) {
+      alert("Daily limit reached (10 prompts per day). Please come back tomorrow.");
+      return;
+    }
+
     try {
       const response = await fetch("https://promptlink-backend.onrender.com/prompt", {
         method: "POST",
@@ -74,6 +102,8 @@ const ContextProvider = ({ children }) => {
         body: JSON.stringify({ prompt: userPrompt, email }),
       });
 
+      // after successful response:
+      incrementUsage(email);
       const data = await response.json();
       const { intent, response: aiResponse, score, model, served_from_cache } = data;
 
@@ -154,7 +184,7 @@ const ContextProvider = ({ children }) => {
     const userPrompt = lastPrompt;
 
     try {
-      const response = await fetch("http://https://promptlink-backend.onrender.com/enhance", {
+      const response = await fetch("https://promptlink-backend.onrender.com/enhance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: userPrompt, email }),
