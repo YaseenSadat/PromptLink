@@ -455,4 +455,4 @@ def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_scor
           )
 
     except:
-      print(f"[LOGGING ERROR] Neo4j logging failed: {e}")
+      print(f"Neo4j logging error")
