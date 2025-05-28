@@ -420,35 +420,39 @@ async def enhance_prompt(prompt: str, email: str | None = None):
 driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USERNAME, NEO4J_PASSWORD))
 
 def log_to_neo4j(prompt: str, intent: str, response: str, score: float, cot_score: float, model: str, email=None):
-    with driver.session() as session:
-        session.run(
-            """
-            MERGE (p:Prompt {text: $prompt})
-            MERGE (i:Intent {type: $intent})
-            CREATE (r:Response {
-                text: $response,
-                score: $score,
-                cot_score: $cot_score,
-                timestamp: datetime()
-            })
-            MERGE (m:Model {name: $model})
-            
-            // Optional user node if email is provided
-            FOREACH (_ IN CASE WHEN $email IS NOT NULL THEN [1] ELSE [] END |
-                MERGE (u:User {email: $email})
-                MERGE (u)-[:ASKED]->(p)
-            )
-            
-            MERGE (p)-[:HAS_INTENT]->(i)
-            MERGE (p)-[:GOT_RESPONSE]->(r)
-            MERGE (i)-[:TRIGGERED]->(r)
-            MERGE (m)-[:GENERATED]->(r)
-            """,
-            prompt=prompt,
-            intent=intent,
-            response=response,
-            score=score,
-            cot_score=cot_score,
-            model=model,
-            email=email,
-        )
+    try: 
+      with driver.session() as session:
+          session.run(
+              """
+              MERGE (p:Prompt {text: $prompt})
+              MERGE (i:Intent {type: $intent})
+              CREATE (r:Response {
+                  text: $response,
+                  score: $score,
+                  cot_score: $cot_score,
+                  timestamp: datetime()
+              })
+              MERGE (m:Model {name: $model})
+              
+              // Optional user node if email is provided
+              FOREACH (_ IN CASE WHEN $email IS NOT NULL THEN [1] ELSE [] END |
+                  MERGE (u:User {email: $email})
+                  MERGE (u)-[:ASKED]->(p)
+              )
+              
+              MERGE (p)-[:HAS_INTENT]->(i)
+              MERGE (p)-[:GOT_RESPONSE]->(r)
+              MERGE (i)-[:TRIGGERED]->(r)
+              MERGE (m)-[:GENERATED]->(r)
+              """,
+              prompt=prompt,
+              intent=intent,
+              response=response,
+              score=score,
+              cot_score=cot_score,
+              model=model,
+              email=email,
+          )
+
+    except:
+      print(f"[LOGGING ERROR] Neo4j logging failed: {e}")
