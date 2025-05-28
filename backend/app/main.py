@@ -24,9 +24,6 @@ from router import router
 # Instantiate the FastAPI application
 app = FastAPI()
 
-# Include the API routes defined in the router module
-app.include_router(router)
-
 # Add CORS (Cross-Origin Resource Sharing) middleware to the FastAPI app
 # This configuration allows requests from any origin and permits credentials, all methods, and all headers
 app.add_middleware(
@@ -36,3 +33,6 @@ app.add_middleware(
     allow_methods=["*"],       # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
     allow_headers=["*"],       # Allow all headers in incoming requests
 )
+
+# Include the API routes defined in the router module
+app.include_router(router)
