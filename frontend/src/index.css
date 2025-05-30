@@ -93,3 +93,24 @@
   opacity: 1;
   transform: scale(1.2);
 }
+
+/* @media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+
+  .sidebar-wrapper {
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-around;
+  }
+
+  .main-wrapper {
+    height: auto;
+    flex: 1;
+  }
+} */
+
+
+

@@ -269,15 +269,16 @@ const Main = () => {
         {/* Chat Input + Footer Info */}
         <div className="main-bottom">
           <div className="search-box" ref={searchBoxRef}>
-            <input
+            <textarea
               onChange={(e) => setInput(e.target.value)}
               value={input}
               type="text"
               placeholder="Enter a prompt here"
               onKeyDown={handleKeyPress}
+              rows={1}
             />
             <div>
-              {input && <img onClick={() => onSent()} src={assets.send_icon} alt="Send Icon" />}
+              {input && <img onClick={() => onSent()} src={assets.send_icon} alt="Send Icon" className="send-icon"/>}
             </div>
           </div>
 
