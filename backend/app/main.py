@@ -28,10 +28,11 @@ app = FastAPI()
 # This configuration allows requests from any origin and permits credentials, all methods, and all headers
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://promptlink.onrender.com"],       # Accept requests from all domains (use with caution in production)
-    allow_credentials=True,    # Allow cookies, authorization headers, and TLS client certificates
-    allow_methods=["*"],       # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
-    allow_headers=["*"],       # Allow all headers in incoming requests
+    allow_origins=["https://promptlink.onrender.com",    # Accept requests from given domains
+                   "https://promptlink.uarham.me"],       
+    allow_credentials=True,                              # Allow cookies, authorization headers, and TLS client certificates
+    allow_methods=["*"],                                 # Allow all HTTP methods (GET, POST, PUT, DELETE, etc.)
+    allow_headers=["*"],                                 # Allow all headers in incoming requests
 )
 
 # Include the API routes defined in the router module
